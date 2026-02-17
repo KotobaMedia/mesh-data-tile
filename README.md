@@ -193,8 +193,119 @@ await encodeTileToFile('out.tile', {
 });
 ```
 
+## MapLibre source handler
+
+Use `createMapLibreSourceHandler` to fetch mesh data tiles, decode them, and convert each cell to GeoJSON polygons.
+For browser apps, import from `mesh-data-tile/browser` (Node-only file helpers are not included in that entrypoint).
+
+```ts
+import { createMapLibreSourceHandler } from 'mesh-data-tile/browser';
+
+const handler = createMapLibreSourceHandler({
+  urlTemplate: 'https://example.com/tiles/{z}/{x}/{y}.tile',
+});
+
+const { geojson } = await handler.fetchTile({ z: 12, x: 3639, y: 1612 });
+```
+
+JIS mesh placeholders supported by `japanmesh`:
+
+- `{jismesh-lv1}` or `{jismesh-80000}`
+- `{jismesh-lv2}` or `{jismesh-10000}`
+- `{jismesh-x5}` or `{jismesh-5000}`
+- `{jismesh-x2}` or `{jismesh-2000}`
+- `{jismesh-lv3}` or `{jismesh-1000}`
+- `{jismesh-lv4}` or `{jismesh-500}`
+- `{jismesh-lv5}` or `{jismesh-250}`
+- `{jismesh-lv6}` or `{jismesh-125}`
+
+Example:
+
+```ts
+const handler = createMapLibreSourceHandler({
+  urlTemplate: 'https://example.com/mesh/{jismesh-lv1}/{jismesh-lv3}.tile',
+});
+```
+
+JIS placeholders are resolved from the chosen point of the requested XYZ tile (`center` by default).
+
+For MapLibre tiled loading, use the built-in protocol helpers:
+
+```ts
+import maplibregl from 'maplibre-gl';
+import {
+  MAPLIBRE_MESH_PROTOCOL_DEFAULT_LAYER_NAME,
+  buildMapLibreMeshProtocolUrlTemplate,
+  createMapLibreMeshTileProtocol,
+} from 'mesh-data-tile/browser';
+
+const protocolName = 'meshtiles';
+const protocol = createMapLibreMeshTileProtocol({
+  protocol: protocolName,
+});
+
+maplibregl.addProtocol(protocolName, protocol);
+// addProtocol takes the protocol name, while the tile URL template carries the target mesh tile URL.
+
+map.addSource('jismesh-example', {
+  type: 'vector',
+  tiles: [
+    buildMapLibreMeshProtocolUrlTemplate('https://example.com/mesh/{jismesh-lv1}.tile', {
+      protocol: protocolName,
+    }),
+  ],
+  tileSize: 512,
+});
+
+map.addLayer({
+  id: 'jismesh-fill',
+  type: 'fill',
+  source: 'jismesh-example',
+  'source-layer': MAPLIBRE_MESH_PROTOCOL_DEFAULT_LAYER_NAME,
+});
+```
+
+Optional zoom constraints can be set in the protocol options:
+
+```ts
+createMapLibreMeshTileProtocol({
+  protocol: 'meshtiles',
+  zoom: { min: 4, max: 12 },
+});
+```
+
+By default, zoom is unconstrained.
+
 ## Run tests
 
 ```bash
 pnpm test
 ```
+
+## Example app
+
+Run the MapLibre + JIS mesh example app:
+
+```bash
+pnpm example:maplibre
+```
+
+Then open:
+
+```text
+http://localhost:4173
+```
+
+Generate only static example tiles:
+
+```bash
+pnpm example:maplibre:tiles
+```
+
+GitHub Pages deployment for the example is configured in:
+
+```text
+.github/workflows/pages.yml
+```
+
+The example uses `createMapLibreMeshTileProtocol(...)` and `buildMapLibreMeshProtocolUrlTemplate(...)` so tile fetching/decoding/tiling all happen inside the library protocol handler.

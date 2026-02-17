@@ -41,15 +41,6 @@ export {
   renderMeshTileUrlTemplate,
 } from './maplibre-source.js';
 export {
-  formatInspectOutput,
-  formatDecodedCsv,
-  inspectTileToText,
-  decodeTileToCsv,
-  inspectTileFile,
-  decodeTileFileToCsv,
-  encodeTileToFile,
-} from './api.js';
-export {
   encodeTile,
   decodeTile,
   inspectTile,

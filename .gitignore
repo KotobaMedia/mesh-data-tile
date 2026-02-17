@@ -1,2 +1,4 @@
 dist/
 node_modules/
+examples/maplibre-jismesh/dist/
+examples/maplibre-jismesh/public/tiles/
