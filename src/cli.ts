@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { readFile, writeFile } from 'node:fs/promises';
 import { Command } from 'commander';
-import { decodeTile, decodeXyzTileId, encodeTile, inspectTile } from './index.js';
+import { decodeTileToCsv, encodeTileToFile, inspectTileToText } from './index.js';
 import type { TileEncodeInput, DType, Endianness, CompressionMode, MeshKind } from './types.js';
 import { TileFormatError } from './errors.js';
 
@@ -106,77 +106,16 @@ async function writeOutput(path: string | undefined, content: Uint8Array | strin
   await writeFile(path, content);
 }
 
-function formatInspectOutput(info: ReturnType<typeof inspectTile>): string {
-  const lines = [
-    `Format Major: ${info.header.format_major}`,
-    `Tile ID: ${info.header.tile_id.toString()}`,
-    `Mesh Kind: ${info.header.mesh_kind}`,
-    `DType: ${info.header.dtype}`,
-    `Endianness: ${info.header.endianness}`,
-    `Compression: ${info.header.compression}`,
-    `Rows: ${info.header.dimensions.rows}`,
-    `Cols: ${info.header.dimensions.cols}`,
-    `Bands: ${info.header.dimensions.bands}`,
-    `NoData: ${info.header.no_data === null ? 'null' : String(info.header.no_data)}`,
-    `Uncompressed Payload Bytes: ${info.header.payload.uncompressed_bytes}`,
-    `Compressed Payload Bytes: ${info.header.payload.compressed_bytes}`,
-    `Payload CRC32: ${info.header.checksum.payload_crc32}`,
-    `Header CRC32: ${info.header.checksum.header_crc32}`,
-    `Header Length: ${info.header_length}`,
-    `Payload Offset: ${info.payload_offset}`,
-    `Payload Length: ${info.payload_length}`,
-  ];
-
-  if (info.header.mesh_kind === 'xyz') {
-    const xyz = decodeXyzTileId(info.header.tile_id);
-    lines.push(`XYZ Zoom: ${xyz.zoom}`);
-    lines.push(`XYZ X: ${xyz.x}`);
-    lines.push(`XYZ Y: ${xyz.y}`);
-    lines.push(`XYZ Quadkey Integer: ${xyz.quadkey_integer.toString()}`);
-  }
-
-  return lines.join('\n');
-}
-
-function formatDecodedCsv(values: ArrayLike<number>, rows: number, cols: number, bands: number): string {
-  const expected = rows * cols * bands;
-  if (values.length !== expected) {
-    fail(`Decoded value count ${values.length} does not match dimensions (${rows}x${cols}x${bands}).`);
-  }
-
-  const header = ['x', 'y', ...Array.from({ length: bands }, (_unused, i) => `b${i}`)].join(',');
-  const lines: string[] = [header];
-  let index = 0;
-  for (let row = 0; row < rows; row += 1) {
-    for (let col = 0; col < cols; col += 1) {
-      const bandValues: string[] = [];
-      for (let band = 0; band < bands; band += 1) {
-        bandValues.push(String(values[index]));
-        index += 1;
-      }
-      lines.push(`${col},${row},${bandValues.join(',')}`);
-    }
-  }
-  return lines.join('\n');
-}
-
 async function runInspect(inputPath: string): Promise<void> {
   const input = new Uint8Array(await readFile(inputPath));
-  const info = inspectTile(input);
-  console.log(formatInspectOutput(info));
+  const result = inspectTileToText(input);
+  console.log(result.text);
 }
 
 async function runDecode(inputPath: string, options: DecodeCommandOptions): Promise<void> {
   const input = new Uint8Array(await readFile(inputPath));
-  const decoded = await decodeTile(input);
-
-  const csv = formatDecodedCsv(
-    decoded.data,
-    decoded.header.dimensions.rows,
-    decoded.header.dimensions.cols,
-    decoded.header.dimensions.bands
-  );
-  await writeOutput(options.output, csv);
+  const result = await decodeTileToCsv(input);
+  await writeOutput(options.output, result.csv);
 }
 
 function parseEnumIfDefined<T extends string>(
@@ -244,8 +183,7 @@ async function runEncode(options: EncodeCommandOptions): Promise<void> {
     fail('Missing required --endianness');
   }
 
-  const encoded = await encodeTile(input);
-  await writeFile(options.output, encoded.bytes);
+  await encodeTileToFile(options.output, input);
 }
 
 async function runWithErrorHandling(operation: () => Promise<void>): Promise<void> {

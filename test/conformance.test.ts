@@ -3,7 +3,21 @@ import { describe, it } from 'node:test';
 import { Buffer } from 'node:buffer';
 import { promises as fs } from 'node:fs';
 import { join } from 'node:path';
-import { decodeTile, decodeXyzTileId, encodeTile, encodeXyzTileId, inspectTile } from '../src/index.js';
+import { tmpdir } from 'node:os';
+import {
+  decodeTile,
+  decodeTileFileToCsv,
+  decodeTileToCsv,
+  decodeXyzTileId,
+  encodeTile,
+  encodeTileToFile,
+  encodeXyzTileId,
+  formatDecodedCsv,
+  formatInspectOutput,
+  inspectTile,
+  inspectTileFile,
+  inspectTileToText,
+} from '../src/index.js';
 import { TileFormatError } from '../src/errors.js';
 
 const fixturesDir = join(process.cwd(), 'test', 'fixtures');
@@ -319,5 +333,62 @@ describe('mesh tile v1 conformance', () => {
     assert.equal(decodedTileId.zoom, 12);
     assert.equal(decodedTileId.x, 3639);
     assert.equal(decodedTileId.y, 1612);
+  });
+
+  it('library api decodes tile bytes to csv', async () => {
+    const input = new Uint8Array(await fs.readFile(join(fixturesDir, 'uncompressed.tile')));
+    const { csv, decoded } = await decodeTileToCsv(input);
+
+    assert.equal(decoded.header.mesh_kind, 'jis-x0410');
+    assert.equal(
+      csv,
+      ['x,y,b0,b1,b2', '0,0,1,101,201', '1,0,2,102,202', '0,1,3,103,203', '1,1,4,104,204'].join('\n')
+    );
+  });
+
+  it('library api inspect text includes xyz coordinates', async () => {
+    const input = new Uint8Array(await fs.readFile(join(fixturesDir, 'xyz-uncompressed.tile')));
+    const result = inspectTileToText(input);
+    const fromFormatter = formatInspectOutput(inspectTile(input));
+
+    assert.equal(result.text, fromFormatter);
+    assert.match(result.text, /XYZ Zoom: 12/);
+    assert.match(result.text, /XYZ X: 3639/);
+    assert.match(result.text, /XYZ Y: 1612/);
+  });
+
+  it('library api file helpers roundtrip', async () => {
+    const tempDir = await fs.mkdtemp(join(tmpdir(), 'mesh-data-tile-'));
+    const outputPath = join(tempDir, 'api-roundtrip.tile');
+
+    try {
+      await encodeTileToFile(outputPath, {
+        ...tileTemplate(),
+        tile_id: 2001n,
+        dtype: 'uint16',
+        data: [10, 20, 30, 40],
+      });
+
+      const inspected = await inspectTileFile(outputPath);
+      const decoded = await decodeTileFileToCsv(outputPath);
+
+      assert.equal(inspected.info.header.tile_id, 2001n);
+      assert.equal(decoded.csv, ['x,y,b0', '0,0,10', '1,0,20', '0,1,30', '1,1,40'].join('\n'));
+    } finally {
+      await fs.rm(tempDir, { recursive: true, force: true });
+    }
+  });
+
+  it('formatDecodedCsv rejects mismatched value counts', () => {
+    assert.throws(
+      () => {
+        formatDecodedCsv([1, 2], 1, 1, 1);
+      },
+      (error: unknown) => {
+        assert.ok(error instanceof TileFormatError);
+        assert.equal((error as TileFormatError).code, 'INVALID_PAYLOAD_LENGTH');
+        return true;
+      }
+    );
   });
 });

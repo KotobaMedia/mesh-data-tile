@@ -1,5 +1,14 @@
 export * from './types.js';
 export {
+  formatInspectOutput,
+  formatDecodedCsv,
+  inspectTileToText,
+  decodeTileToCsv,
+  inspectTileFile,
+  decodeTileFileToCsv,
+  encodeTileToFile,
+} from './api.js';
+export {
   encodeTile,
   decodeTile,
   inspectTile,

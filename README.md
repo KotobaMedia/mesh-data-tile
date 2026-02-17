@@ -1,6 +1,6 @@
 # mesh-data-tile
 
-Reference implementation for Mesh Tile Format v1 (`MTI1`) with a TypeScript CLI.
+Reference implementation for Mesh Tile Format v1 (`MTI1`) with a TypeScript CLI and library API.
 
 ## Prerequisites
 
@@ -132,6 +132,65 @@ import { encodeXyzTileId, decodeXyzTileId } from 'mesh-data-tile';
 const tileId = encodeXyzTileId({ zoom: 12, x: 3639, y: 1612 });
 const decoded = decodeXyzTileId(tileId);
 // decoded => { zoom: 12, x: 3639, y: 1612, quadkey_integer: ... }
+```
+
+## Library API
+
+Use low-level byte APIs:
+
+```ts
+import { encodeTile, decodeTile, inspectTile } from 'mesh-data-tile';
+
+const encoded = await encodeTile({
+  tile_id: '42',
+  mesh_kind: 'jis-x0410',
+  rows: 2,
+  cols: 2,
+  bands: 1,
+  dtype: 'uint16',
+  endianness: 'little',
+  compression: 'none',
+  data: [10, 20, 30, 40],
+});
+
+const inspected = inspectTile(encoded.bytes);
+const decoded = await decodeTile(encoded.bytes);
+```
+
+Use high-level helpers equivalent to CLI output:
+
+```ts
+import {
+  decodeTile,
+  decodeTileToCsv,
+  decodeTileFileToCsv,
+  encodeTileToFile,
+  inspectTileFile,
+  inspectTileToText,
+} from 'mesh-data-tile';
+import { readFile } from 'node:fs/promises';
+
+const inspectResult = await inspectTileFile('in.tile');
+console.log(inspectResult.text);
+
+const { csv } = await decodeTileFileToCsv('in.tile');
+console.log(csv);
+
+const bytes = new Uint8Array(await readFile('in.tile'));
+const fromBytes = inspectTileToText(bytes);
+const csvFromBytes = await decodeTileToCsv(bytes);
+const decoded = await decodeTile(bytes);
+
+await encodeTileToFile('out.tile', {
+  tile_id: 99n,
+  mesh_kind: 'jis-x0410',
+  rows: 2,
+  cols: 2,
+  bands: 1,
+  dtype: 'uint8',
+  endianness: 'little',
+  data: [1, 2, 3, 4],
+});
 ```
 
 ## Run tests
