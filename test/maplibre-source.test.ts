@@ -2,8 +2,12 @@ import assert from 'node:assert/strict';
 import { promises as fs } from 'node:fs';
 import { join } from 'node:path';
 import { describe, it } from 'node:test';
+import { fromGeojsonVt } from '@maplibre/vt-pbf';
 import {
   JIS_MESH_LEVELS,
+  MAPLIBRE_MESH_PROTOCOL_DEFAULT_LAYER_NAME,
+  MAPLIBRE_MESH_PROTOCOL_DEFAULT_VECTOR_EXTENT,
+  MAPLIBRE_MESH_PROTOCOL_DEFAULT_VECTOR_VERSION,
   buildMapLibreMeshProtocolUrlTemplate,
   createMapLibreMeshTileProtocol,
   createMapLibreSourceHandler,
@@ -227,6 +231,99 @@ describe('maplibre source helpers', () => {
     assert.notEqual(first.data, second.data);
     assert.ok(first.data.byteLength > 0);
     assert.ok(requestedUrls.length >= 1);
+  });
+
+  it('does not drop shared mesh data when another overlapping request aborts', async () => {
+    const fixturePath = join(process.cwd(), 'test', 'fixtures', 'xyz-uncompressed.tile');
+    const bytes = new Uint8Array(await fs.readFile(fixturePath));
+    const payload = new Uint8Array(bytes.length);
+    payload.set(bytes);
+
+    const emptyBytes = fromGeojsonVt(
+      { [MAPLIBRE_MESH_PROTOCOL_DEFAULT_LAYER_NAME]: { features: [] } as never },
+      {
+        extent: MAPLIBRE_MESH_PROTOCOL_DEFAULT_VECTOR_EXTENT,
+        version: MAPLIBRE_MESH_PROTOCOL_DEFAULT_VECTOR_VERSION,
+      }
+    );
+
+    const requestedUrls: string[] = [];
+    let resolveFirstFetchStart!: () => void;
+    const firstFetchStarted = new Promise<void>((resolve) => {
+      resolveFirstFetchStart = resolve;
+    });
+    let releaseFetch!: () => void;
+    const fetchRelease = new Promise<void>((resolve) => {
+      releaseFetch = resolve;
+    });
+    let didStartFirstFetch = false;
+
+    const fetchStub: typeof fetch = async (input, init) => {
+      requestedUrls.push(String(input));
+      if (!didStartFirstFetch) {
+        didStartFirstFetch = true;
+        resolveFirstFetchStart();
+      }
+
+      const signal = init?.signal as AbortSignal | undefined;
+      await new Promise<void>((resolve, reject) => {
+        const onAbort = (): void => {
+          cleanup();
+          reject(signal?.reason ?? new Error('aborted'));
+        };
+        const onRelease = (): void => {
+          cleanup();
+          resolve();
+        };
+        const cleanup = (): void => {
+          if (signal) {
+            signal.removeEventListener('abort', onAbort);
+          }
+        };
+
+        if (signal) {
+          if (signal.aborted) {
+            cleanup();
+            reject(signal.reason ?? new Error('aborted'));
+            return;
+          }
+          signal.addEventListener('abort', onAbort, { once: true });
+        }
+
+        fetchRelease.then(onRelease, reject);
+      });
+
+      return new Response(payload.slice().buffer, { status: 200 });
+    };
+
+    const protocol = createMapLibreMeshTileProtocol({
+      protocol: 'meshtiles',
+      fetch: fetchStub,
+      jismeshSamplePoints: ['center'],
+    });
+
+    const template = buildMapLibreMeshProtocolUrlTemplate('https://tiles.example/static.tile', {
+      protocol: 'meshtiles',
+    });
+    const firstRequestUrl = template.replace('{z}', '12').replace('{x}', '3638').replace('{y}', '1612');
+    const secondRequestUrl = template.replace('{z}', '12').replace('{x}', '3639').replace('{y}', '1612');
+    const firstAbortController = new AbortController();
+    const secondAbortController = new AbortController();
+
+    const firstPromise = protocol({ url: firstRequestUrl }, firstAbortController);
+    await firstFetchStarted;
+
+    const secondPromise = protocol({ url: secondRequestUrl }, secondAbortController);
+    await new Promise<void>((resolve) => {
+      setTimeout(resolve, 0);
+    });
+
+    firstAbortController.abort();
+    releaseFetch();
+
+    const [, second] = await Promise.all([firstPromise, secondPromise]);
+    assert.equal(requestedUrls.length, 1);
+    assert.notDeepEqual(new Uint8Array(second.data), emptyBytes);
   });
 
   it('resolves multiple lv1 mesh tiles for low zoom requests', async () => {

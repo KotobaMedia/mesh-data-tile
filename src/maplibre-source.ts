@@ -500,6 +500,32 @@ function clampGeoJsonVtMaxZoom(value: number): number {
   return value;
 }
 
+function awaitWithAbortSignal<T>(loading: Promise<T>, signal: AbortSignal): Promise<T> {
+  signal.throwIfAborted();
+
+  return new Promise<T>((resolve, reject) => {
+    const onAbort = (): void => {
+      cleanup();
+      reject(signal.reason ?? new Error('Operation aborted.'));
+    };
+    const cleanup = (): void => {
+      signal.removeEventListener('abort', onAbort);
+    };
+
+    signal.addEventListener('abort', onAbort, { once: true });
+    loading.then(
+      (value) => {
+        cleanup();
+        resolve(value);
+      },
+      (error) => {
+        cleanup();
+        reject(error);
+      }
+    );
+  });
+}
+
 function parseMapLibreMeshProtocolRequestUrl(requestUrl: string, protocol: string): MeshProtocolRequestContext {
   let parsed: URL;
   try {
@@ -774,19 +800,18 @@ export function createMapLibreMeshTileProtocol(options: MeshTileProtocolOptions 
 
     let loading = meshFeaturesInFlight.get(candidate.url);
     if (!loading) {
-      loading = candidate.handler.fetchTile(tile, { signal }).then((entry) => {
+      const started = candidate.handler.fetchTile(tile).then((entry) => {
         const features = toDisplayFeatures(entry);
         setToLru(meshFeaturesCache, candidate.url, features, meshFeaturesMaxEntries);
         return features;
       });
+      loading = started.finally(() => {
+        meshFeaturesInFlight.delete(candidate.url);
+      });
       meshFeaturesInFlight.set(candidate.url, loading);
     }
 
-    try {
-      return await loading;
-    } finally {
-      meshFeaturesInFlight.delete(candidate.url);
-    }
+    return await awaitWithAbortSignal(loading, signal);
   };
 
   emitStats();

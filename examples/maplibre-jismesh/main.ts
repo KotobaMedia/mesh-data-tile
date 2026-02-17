@@ -69,7 +69,6 @@ async function main(): Promise<void> {
     map.addSource(SOURCE_ID, {
       type: 'vector',
       tiles: [VECTOR_TILE_TEMPLATE],
-      tileSize: 512,
     });
 
     map.addLayer({
