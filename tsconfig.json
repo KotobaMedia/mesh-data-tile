@@ -1,0 +1,9 @@
+{
+  "extends": "@tsconfig/node24/tsconfig.json",
+  "compilerOptions": {
+    "lib": ["ES2022", "DOM"],
+    "outDir": "dist"
+  },
+  "include": ["src/**/*.ts", "test/**/*.ts"],
+  "exclude": ["dist", "node_modules"]
+}
