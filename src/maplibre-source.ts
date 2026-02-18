@@ -88,7 +88,7 @@ export interface MapLibreProtocolResponse<TData = ArrayBuffer> {
 export type MapLibreAddProtocolAction = (
   requestParameters: MapLibreProtocolRequestParameters,
   abortController: AbortController
-) => Promise<MapLibreProtocolResponse>;
+) => Promise<MapLibreProtocolResponse<any>>;
 
 export interface MeshTileProtocolStats {
   requested: number;
@@ -125,11 +125,6 @@ export interface MeshTileProtocolOptions {
     meshFeaturesMaxEntries?: number;
     templatesMaxEntries?: number;
   };
-}
-
-export interface MeshTileProtocolUrlTemplateOptions {
-  protocol?: string;
-  tilePathTemplate?: string;
 }
 
 interface Bounds {
@@ -408,9 +403,10 @@ export function createMapLibreSourceHandler(options: MapLibreSourceHandlerOption
 }
 
 interface MeshProtocolRequestContext {
+  kind: 'source' | 'tile';
   tile_url_template: string;
-  tile: TileCoordinates;
   request_url: string;
+  tile?: TileCoordinates;
 }
 
 interface MeshProtocolResolvedCandidate {
@@ -500,6 +496,37 @@ function clampGeoJsonVtMaxZoom(value: number): number {
   return value;
 }
 
+function decodePercentEncodedValue(value: string): string {
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return value;
+  }
+}
+
+function deriveMeshTileUrlTemplateFromProtocolRequest(parsed: URL, encodedTemplatePath: string): string {
+  const scheme = parsed.host.toLowerCase();
+  let tileUrlTemplate: string;
+
+  if (scheme === 'http' || scheme === 'https') {
+    if (encodedTemplatePath.startsWith('//')) {
+      tileUrlTemplate = `${scheme}:${encodedTemplatePath}`;
+    } else {
+      tileUrlTemplate = `${scheme}://${encodedTemplatePath.replace(/^\/+/, '')}`;
+    }
+  } else {
+    const encodedRelativePath = encodedTemplatePath.replace(/^\/+/, '');
+    const pieces = [parsed.host, encodedRelativePath].filter((piece) => piece.length > 0);
+    tileUrlTemplate = pieces.join('/');
+  }
+
+  return decodePercentEncodedValue(tileUrlTemplate);
+}
+
+function buildTileJsonTileRequestTemplate(protocol: string, tileUrlTemplate: string): string {
+  return `${protocol}://tiles/{z}/{x}/{y}.mvt?template=${encodeURIComponent(tileUrlTemplate)}`;
+}
+
 function awaitWithAbortSignal<T>(loading: Promise<T>, signal: AbortSignal): Promise<T> {
   signal.throwIfAborted();
 
@@ -541,62 +568,39 @@ function parseMapLibreMeshProtocolRequestUrl(requestUrl: string, protocol: strin
     );
   }
 
-  const match = parsed.pathname.match(/\/(\d+)\/(\d+)\/(\d+)(?:\.[a-z0-9]+)?$/i);
-  if (!match) {
-    throw createError(
-      'INVALID_FIELD_VALUE',
-      `Invalid mesh protocol tile path in "${requestUrl}". Expected "/.../{z}/{x}/{y}.mvt".`
-    );
-  }
+  const tilePathMatch = parsed.pathname.match(/^(.*)\/(\d+)\/(\d+)\/(\d+)(?:\.[a-z0-9]+)?$/i);
 
   let tileUrlTemplate = parsed.searchParams.get('template') ?? '';
   if (tileUrlTemplate === '') {
-    const segments = parsed.pathname.split('/').filter((segment) => segment.length > 0);
-    if (segments.length >= 4 && /%[0-9a-f]{2}/i.test(segments[0])) {
-      try {
-        tileUrlTemplate = decodeURIComponent(segments[0]);
-      } catch {
-        tileUrlTemplate = segments[0];
-      }
-    } else if (parsed.host !== '' && parsed.host !== 'tiles') {
-      try {
-        tileUrlTemplate = decodeURIComponent(parsed.host);
-      } catch {
-        tileUrlTemplate = parsed.host;
-      }
-    }
+    const encodedTemplatePath = tilePathMatch?.[1] ?? parsed.pathname;
+    tileUrlTemplate = deriveMeshTileUrlTemplateFromProtocolRequest(parsed, encodedTemplatePath);
   }
 
   if (tileUrlTemplate.trim() === '') {
     throw createError(
       'MISSING_REQUIRED_FIELD',
-      `Missing "template" query parameter in "${requestUrl}". Use buildMapLibreMeshProtocolUrlTemplate(...).`
+      `Missing mesh tile URL template in "${requestUrl}". Use "meshtiles://{relative path}" or "meshtiles://https://{absolute path}" for source URLs, or append "/{z}/{x}/{y}.mvt" for tile requests.`
     );
   }
 
+  if (!tilePathMatch) {
+    return {
+      kind: 'source',
+      tile_url_template: tileUrlTemplate,
+      request_url: requestUrl,
+    };
+  }
+
   return {
+    kind: 'tile',
     tile_url_template: tileUrlTemplate,
     tile: normalizeTileCoordinates({
-      z: Number(match[1]),
-      x: Number(match[2]),
-      y: Number(match[3]),
+      z: Number(tilePathMatch[2]),
+      x: Number(tilePathMatch[3]),
+      y: Number(tilePathMatch[4]),
     }),
     request_url: requestUrl,
   };
-}
-
-export function buildMapLibreMeshProtocolUrlTemplate(
-  tileUrlTemplate: string,
-  options: MeshTileProtocolUrlTemplateOptions = {}
-): string {
-  if (tileUrlTemplate.trim() === '') {
-    throw createError('MISSING_REQUIRED_FIELD', 'tileUrlTemplate is required.');
-  }
-
-  const protocol = assertProtocolName(options.protocol ?? MAPLIBRE_MESH_PROTOCOL_DEFAULT_SCHEME);
-  const tilePathTemplate = (options.tilePathTemplate ?? '{z}/{x}/{y}.mvt').replace(/^\/+/, '');
-  const separator = tilePathTemplate.includes('?') ? '&' : '?';
-  return `${protocol}://tiles/${tilePathTemplate}${separator}template=${encodeURIComponent(tileUrlTemplate)}`;
 }
 
 export function createMapLibreMeshTileProtocol(options: MeshTileProtocolOptions = {}): MapLibreAddProtocolAction {
@@ -820,6 +824,21 @@ export function createMapLibreMeshTileProtocol(options: MeshTileProtocolOptions 
     stats.requested += 1;
     const parsed = parseMapLibreMeshProtocolRequestUrl(requestParameters.url, protocol);
 
+    if (parsed.kind === 'source') {
+      emitStats();
+      return {
+        data: {
+          tilejson: '3.0.0',
+          scheme: 'xyz',
+          tiles: [buildTileJsonTileRequestTemplate(protocol, parsed.tile_url_template)],
+          minzoom: minZoomConstraint ?? 0,
+          maxzoom: maxZoomConstraint ?? 24,
+        },
+      };
+    }
+
+    const tile = parsed.tile as TileCoordinates;
+
     const cached = getFromLru(vectorTileCache, parsed.request_url);
     if (cached) {
       stats.cache_hits += 1;
@@ -839,13 +858,13 @@ export function createMapLibreMeshTileProtocol(options: MeshTileProtocolOptions 
       abortController.signal.throwIfAborted();
 
       if (
-        (minZoomConstraint !== undefined && parsed.tile.z < minZoomConstraint) ||
-        (maxZoomConstraint !== undefined && parsed.tile.z > maxZoomConstraint)
+        (minZoomConstraint !== undefined && tile.z < minZoomConstraint) ||
+        (maxZoomConstraint !== undefined && tile.z > maxZoomConstraint)
       ) {
         return emptyVectorTileBytes;
       }
 
-      const candidates = resolveMeshCandidates(parsed.tile_url_template, parsed.tile);
+      const candidates = resolveMeshCandidates(parsed.tile_url_template, tile);
       if (candidates.length === 0) {
         return emptyVectorTileBytes;
       }
@@ -853,7 +872,7 @@ export function createMapLibreMeshTileProtocol(options: MeshTileProtocolOptions 
       const featureGroups = await Promise.all(
         candidates.map(async (candidate) => {
           try {
-            return await getMeshFeatures(parsed.tile, candidate, abortController.signal);
+            return await getMeshFeatures(tile, candidate, abortController.signal);
           } catch {
             stats.failures += 1;
             return [] as MeshTileFeature[];
@@ -868,7 +887,7 @@ export function createMapLibreMeshTileProtocol(options: MeshTileProtocolOptions 
 
       abortController.signal.throwIfAborted();
 
-      const vectorMaxZoom = clampGeoJsonVtMaxZoom(configuredVectorMaxZoom ?? parsed.tile.z);
+      const vectorMaxZoom = clampGeoJsonVtMaxZoom(configuredVectorMaxZoom ?? tile.z);
       const vectorIndexMaxZoom = Math.min(configuredVectorIndexMaxZoom, vectorMaxZoom);
       const index = geojsonvt(
         {
@@ -885,7 +904,7 @@ export function createMapLibreMeshTileProtocol(options: MeshTileProtocolOptions 
         }
       );
 
-      const vectorTile = index.getTile(parsed.tile.z, parsed.tile.x, parsed.tile.y);
+      const vectorTile = index.getTile(tile.z, tile.x, tile.y);
       const bytes = vectorTile
         ? fromGeojsonVt(
             { [layerName]: vectorTile },

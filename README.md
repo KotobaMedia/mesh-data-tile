@@ -235,26 +235,15 @@ For MapLibre tiled loading, use the built-in protocol helpers:
 import maplibregl from 'maplibre-gl';
 import {
   MAPLIBRE_MESH_PROTOCOL_DEFAULT_LAYER_NAME,
-  buildMapLibreMeshProtocolUrlTemplate,
   createMapLibreMeshTileProtocol,
 } from 'mesh-data-tile/browser';
 
-const protocolName = 'meshtiles';
-const protocol = createMapLibreMeshTileProtocol({
-  protocol: protocolName,
-});
-
-maplibregl.addProtocol(protocolName, protocol);
-// addProtocol takes the protocol name, while the tile URL template carries the target mesh tile URL.
+const protocol = createMapLibreMeshTileProtocol();
+maplibregl.addProtocol('meshtiles', protocol);
 
 map.addSource('jismesh-example', {
   type: 'vector',
-  tiles: [
-    buildMapLibreMeshProtocolUrlTemplate('https://example.com/mesh/{jismesh-lv1}.tile', {
-      protocol: protocolName,
-    }),
-  ],
-  tileSize: 512,
+  url: `meshtiles://https://example.com/mesh/{jismesh-lv1}.tile`,
 });
 
 map.addLayer({
@@ -269,7 +258,6 @@ Optional zoom constraints can be set in the protocol options:
 
 ```ts
 createMapLibreMeshTileProtocol({
-  protocol: 'meshtiles',
   zoom: { min: 4, max: 12 },
 });
 ```
@@ -308,4 +296,4 @@ GitHub Pages deployment for the example is configured in:
 .github/workflows/pages.yml
 ```
 
-The example uses `createMapLibreMeshTileProtocol(...)` and `buildMapLibreMeshProtocolUrlTemplate(...)` so tile fetching/decoding/tiling all happen inside the library protocol handler.
+The example uses `createMapLibreMeshTileProtocol(...)` with direct protocol source URLs (`meshtiles://{relative path}` or `meshtiles://https://{absolute path}`). The handler returns TileJSON and serves tile bytes internally, so tile fetching/decoding/tiling all happen inside the library protocol handler.

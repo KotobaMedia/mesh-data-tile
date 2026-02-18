@@ -16,7 +16,6 @@ export type {
   MapLibreAddProtocolAction,
   MeshTileProtocolStats,
   MeshTileProtocolOptions,
-  MeshTileProtocolUrlTemplateOptions,
 } from './maplibre-source.js';
 export {
   JIS_MESH_LEVELS,
@@ -36,7 +35,6 @@ export {
   MAPLIBRE_MESH_PROTOCOL_DEFAULT_SAMPLE_POINTS,
   createMapLibreSourceHandler,
   createMapLibreMeshTileProtocol,
-  buildMapLibreMeshProtocolUrlTemplate,
   decodedMeshTileToGeoJson,
   renderMeshTileUrlTemplate,
 } from './maplibre-source.js';

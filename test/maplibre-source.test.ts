@@ -8,7 +8,6 @@ import {
   MAPLIBRE_MESH_PROTOCOL_DEFAULT_LAYER_NAME,
   MAPLIBRE_MESH_PROTOCOL_DEFAULT_VECTOR_EXTENT,
   MAPLIBRE_MESH_PROTOCOL_DEFAULT_VECTOR_VERSION,
-  buildMapLibreMeshProtocolUrlTemplate,
   createMapLibreMeshTileProtocol,
   createMapLibreSourceHandler,
   decodeTile,
@@ -35,6 +34,13 @@ function xyzTileCenter(tile: { z: number; x: number; y: number }): { lat: number
   const lon = ((tile.x + 0.5) / n) * 360 - 180;
   const lat = tileYToLat(tile.y + 0.5, tile.z);
   return { lat, lon };
+}
+
+function fillProtocolRequestTileCoordinates(
+  template: string,
+  tile: { z: number; x: number; y: number }
+): string {
+  return template.replace('{z}', String(tile.z)).replace('{x}', String(tile.x)).replace('{y}', String(tile.y));
 }
 
 describe('maplibre source helpers', () => {
@@ -190,14 +196,62 @@ describe('maplibre source helpers', () => {
     assert.equal(fetched.geojson.features.length, 4);
   });
 
-  it('builds protocol tile URL templates', () => {
-    const template = buildMapLibreMeshProtocolUrlTemplate('https://tiles.example/{jismesh-lv1}.tile', {
-      protocol: 'meshtiles',
+  it('defaults protocol scheme to meshtiles for source URLs', async () => {
+    const fixturePath = join(process.cwd(), 'test', 'fixtures', 'xyz-uncompressed.tile');
+    const bytes = new Uint8Array(await fs.readFile(fixturePath));
+    const payload = new Uint8Array(bytes.length);
+    payload.set(bytes);
+
+    const requestedUrls: string[] = [];
+    const fetchStub: typeof fetch = async (input) => {
+      requestedUrls.push(String(input));
+      return new Response(payload.slice().buffer, { status: 200 });
+    };
+
+    const protocol = createMapLibreMeshTileProtocol({ fetch: fetchStub });
+    const result = await protocol({ url: 'meshtiles://tiles/{jismesh-lv1}.tile', type: 'json' }, new AbortController());
+
+    assert.deepEqual(result.data, {
+      tilejson: '3.0.0',
+      scheme: 'xyz',
+      tiles: ['meshtiles://tiles/{z}/{x}/{y}.mvt?template=tiles%2F%7Bjismesh-lv1%7D.tile'],
+      minzoom: 0,
+      maxzoom: 24,
     });
-    assert.equal(
-      template,
-      'meshtiles://tiles/{z}/{x}/{y}.mvt?template=https%3A%2F%2Ftiles.example%2F%7Bjismesh-lv1%7D.tile'
+    assert.equal(requestedUrls.length, 0);
+  });
+
+  it('supports meshtiles://https://{absolute path} source URLs', async () => {
+    const fixturePath = join(process.cwd(), 'test', 'fixtures', 'xyz-uncompressed.tile');
+    const bytes = new Uint8Array(await fs.readFile(fixturePath));
+    const payload = new Uint8Array(bytes.length);
+    payload.set(bytes);
+
+    const requestedUrls: string[] = [];
+    const fetchStub: typeof fetch = async (input) => {
+      requestedUrls.push(String(input));
+      return new Response(payload.slice().buffer, { status: 200 });
+    };
+
+    const protocol = createMapLibreMeshTileProtocol({
+      protocol: 'meshtiles',
+      fetch: fetchStub,
+    });
+    const result = await protocol(
+      { url: 'meshtiles://https://tiles.example/{jismesh-lv1}.tile', type: 'json' },
+      new AbortController()
     );
+
+    assert.deepEqual(result.data, {
+      tilejson: '3.0.0',
+      scheme: 'xyz',
+      tiles: [
+        'meshtiles://tiles/{z}/{x}/{y}.mvt?template=https%3A%2F%2Ftiles.example%2F%7Bjismesh-lv1%7D.tile',
+      ],
+      minzoom: 0,
+      maxzoom: 24,
+    });
+    assert.equal(requestedUrls.length, 0);
   });
 
   it('creates a protocol handler that returns transferable array buffers', async () => {
@@ -216,12 +270,12 @@ describe('maplibre source helpers', () => {
       protocol: 'meshtiles',
       fetch: fetchStub,
     });
-    const requestUrl = buildMapLibreMeshProtocolUrlTemplate('https://tiles.example/{jismesh-lv1}.tile', {
-      protocol: 'meshtiles',
-    })
-      .replace('{z}', '10')
-      .replace('{x}', '909')
-      .replace('{y}', '403');
+    const source = await protocol(
+      { url: 'meshtiles://https://tiles.example/{jismesh-lv1}.tile', type: 'json' },
+      new AbortController()
+    );
+    const sourceData = source.data as { tiles: string[] };
+    const requestUrl = fillProtocolRequestTileCoordinates(sourceData.tiles[0], { z: 10, x: 909, y: 403 });
 
     const first = await protocol({ url: requestUrl }, new AbortController());
     const second = await protocol({ url: requestUrl }, new AbortController());
@@ -302,11 +356,9 @@ describe('maplibre source helpers', () => {
       jismeshSamplePoints: ['center'],
     });
 
-    const template = buildMapLibreMeshProtocolUrlTemplate('https://tiles.example/static.tile', {
-      protocol: 'meshtiles',
-    });
-    const firstRequestUrl = template.replace('{z}', '12').replace('{x}', '3638').replace('{y}', '1612');
-    const secondRequestUrl = template.replace('{z}', '12').replace('{x}', '3639').replace('{y}', '1612');
+    const template = 'meshtiles://https://tiles.example/static.tile/{z}/{x}/{y}.mvt';
+    const firstRequestUrl = fillProtocolRequestTileCoordinates(template, { z: 12, x: 3638, y: 1612 });
+    const secondRequestUrl = fillProtocolRequestTileCoordinates(template, { z: 12, x: 3639, y: 1612 });
     const firstAbortController = new AbortController();
     const secondAbortController = new AbortController();
 
@@ -344,12 +396,10 @@ describe('maplibre source helpers', () => {
       jismeshSamplePoints: ['center'],
     });
 
-    const requestUrl = buildMapLibreMeshProtocolUrlTemplate('https://tiles.example/{jismesh-lv1}.tile', {
-      protocol: 'meshtiles',
-    })
-      .replace('{z}', '3')
-      .replace('{x}', '7')
-      .replace('{y}', '3');
+    const requestUrl = fillProtocolRequestTileCoordinates(
+      'meshtiles://https://tiles.example/{jismesh-lv1}.tile/{z}/{x}/{y}.mvt',
+      { z: 3, x: 7, y: 3 }
+    );
 
     const result = await protocol({ url: requestUrl }, new AbortController());
     assert.ok(result.data.byteLength > 0);
@@ -372,12 +422,10 @@ describe('maplibre source helpers', () => {
       protocol: 'meshtiles',
       fetch: fetchStub,
     });
-    const requestUrl = buildMapLibreMeshProtocolUrlTemplate('https://tiles.example/{jismesh-lv1}.tile', {
-      protocol: 'meshtiles',
-    })
-      .replace('{z}', '15')
-      .replace('{x}', '29088')
-      .replace('{y}', '12896');
+    const requestUrl = fillProtocolRequestTileCoordinates(
+      'meshtiles://https://tiles.example/{jismesh-lv1}.tile/{z}/{x}/{y}.mvt',
+      { z: 15, x: 29088, y: 12896 }
+    );
 
     const result = await protocol({ url: requestUrl }, new AbortController());
     assert.ok(result.data.byteLength > 0);
@@ -399,12 +447,10 @@ describe('maplibre source helpers', () => {
         max: 8,
       },
     });
-    const requestUrl = buildMapLibreMeshProtocolUrlTemplate('https://tiles.example/{jismesh-lv1}.tile', {
-      protocol: 'meshtiles',
-    })
-      .replace('{z}', '10')
-      .replace('{x}', '909')
-      .replace('{y}', '403');
+    const requestUrl = fillProtocolRequestTileCoordinates(
+      'meshtiles://https://tiles.example/{jismesh-lv1}.tile/{z}/{x}/{y}.mvt',
+      { z: 10, x: 909, y: 403 }
+    );
 
     const result = await protocol({ url: requestUrl }, new AbortController());
     assert.ok(result.data.byteLength > 0);

@@ -2,8 +2,8 @@ import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import './style.css';
 import {
+  MAPLIBRE_MESH_PROTOCOL_DEFAULT_SCHEME,
   MAPLIBRE_MESH_PROTOCOL_DEFAULT_LAYER_NAME,
-  buildMapLibreMeshProtocolUrlTemplate,
   createMapLibreMeshTileProtocol,
 } from '../../src/browser.js';
 
@@ -13,11 +13,8 @@ type LonLat = {
 };
 
 const BASEMAP_STYLE_URL = 'https://tiles.kmproj.com/styles/osm-ja-light.json';
-const PROTOCOL_SCHEME = 'meshtiles';
-const JIS_MESH_TILE_TEMPLATE = 'tiles/{jismesh-lv1}.tile';
-const VECTOR_TILE_TEMPLATE = buildMapLibreMeshProtocolUrlTemplate(JIS_MESH_TILE_TEMPLATE, {
-  protocol: PROTOCOL_SCHEME,
-});
+const PROTOCOL_SCHEME = MAPLIBRE_MESH_PROTOCOL_DEFAULT_SCHEME;
+const MESH_SOURCE_URL = `${PROTOCOL_SCHEME}://tiles/{jismesh-lv1}.tile`;
 const SOURCE_ID = 'jismesh-example';
 const SOURCE_LAYER = MAPLIBRE_MESH_PROTOCOL_DEFAULT_LAYER_NAME;
 const DEFAULT_CENTER: LonLat = {
@@ -45,7 +42,6 @@ async function main(): Promise<void> {
   maplibregl.addProtocol(
     PROTOCOL_SCHEME,
     createMapLibreMeshTileProtocol({
-      protocol: PROTOCOL_SCHEME,
       onStats: (stats) => {
         setStatus(
           `Protocol requests: ${stats.requested}, loaded: ${stats.loaded}, cache hits: ${stats.cache_hits}, in-flight: ${stats.in_flight}, failures: ${stats.failures}.`
@@ -68,7 +64,7 @@ async function main(): Promise<void> {
   map.on('load', () => {
     map.addSource(SOURCE_ID, {
       type: 'vector',
-      tiles: [VECTOR_TILE_TEMPLATE],
+      url: MESH_SOURCE_URL,
     });
 
     map.addLayer({
