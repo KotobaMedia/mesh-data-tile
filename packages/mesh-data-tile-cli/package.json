@@ -1,0 +1,49 @@
+{
+  "name": "mesh-data-tile-cli",
+  "version": "1.0.0",
+  "description": "CLI for mesh-data-tile",
+  "type": "module",
+  "bin": {
+    "mesh-tile": "dist/cli.js"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "clean": "rm -rf dist",
+    "build": "pnpm run clean && tsc -p tsconfig.json",
+    "dev": "tsx src/cli.ts",
+    "prepack": "pnpm run build",
+    "test": "pnpm run build && node dist/cli.js --help > /dev/null"
+  },
+  "files": [
+    "dist"
+  ],
+  "keywords": [
+    "mesh-tile",
+    "cli",
+    "geospatial"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/KotobaMedia/mesh-data-tile.git"
+  },
+  "bugs": {
+    "url": "https://github.com/KotobaMedia/mesh-data-tile/issues"
+  },
+  "homepage": "https://github.com/KotobaMedia/mesh-data-tile#readme",
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "commander": "^14.0.3",
+    "mesh-data-tile": "workspace:*"
+  },
+  "devDependencies": {
+    "@tsconfig/node24": "^24.0.4",
+    "@types/node": "^24.0.0",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.2"
+  }
+}

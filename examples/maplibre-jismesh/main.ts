@@ -1,11 +1,9 @@
-import maplibregl from 'maplibre-gl';
-import 'maplibre-gl/dist/maplibre-gl.css';
 import './style.css';
 import {
   MAPLIBRE_MESH_PROTOCOL_DEFAULT_SCHEME,
   MAPLIBRE_MESH_PROTOCOL_DEFAULT_LAYER_NAME,
   createMapLibreMeshTileProtocol,
-} from '../../src/browser.js';
+} from 'mesh-data-tile/browser';
 
 type LonLat = {
   lon: number;
@@ -23,6 +21,14 @@ const DEFAULT_CENTER: LonLat = {
 };
 const DEFAULT_ZOOM = 10;
 
+function getMapLibreGlobal(): any {
+  const globalMapLibre = (globalThis as { maplibregl?: any }).maplibregl;
+  if (!globalMapLibre) {
+    throw new Error('maplibregl is not available on globalThis.');
+  }
+  return globalMapLibre;
+}
+
 function getStatusElement(): HTMLElement {
   const element = document.getElementById('status');
   if (!element) {
@@ -36,6 +42,8 @@ function setStatus(text: string): void {
 }
 
 async function main(): Promise<void> {
+  const maplibregl = getMapLibreGlobal();
+
   setStatus('Registering protocol...');
 
   maplibregl.removeProtocol(PROTOCOL_SCHEME);

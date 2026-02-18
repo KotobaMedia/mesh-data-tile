@@ -1,0 +1,21 @@
+{
+  "name": "mesh-data-tile-maplibre-example",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "generate:tiles": "tsx generate-tiles.ts",
+    "dev": "pnpm --filter mesh-data-tile build && pnpm run generate:tiles && vite",
+    "build": "pnpm --filter mesh-data-tile build && pnpm run generate:tiles && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "mesh-data-tile": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.2",
+    "vite": "^7.3.1"
+  }
+}

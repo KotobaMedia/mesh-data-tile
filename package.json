@@ -1,10 +1,12 @@
 {
   "name": "mesh-data-tile",
   "version": "1.0.0",
-  "description": "",
+  "description": "TypeScript CLI and library for Mesh Tile Format v1 (MTI1).",
   "type": "module",
   "main": "dist/src/index.js",
   "types": "dist/src/index.d.ts",
+  "unpkg": "./dist/browser/mesh-data-tile-browser.iife.js",
+  "jsdelivr": "./dist/browser/mesh-data-tile-browser.iife.js",
   "exports": {
     ".": {
       "types": "./dist/src/index.d.ts",
@@ -13,35 +15,75 @@
     "./browser": {
       "types": "./dist/src/browser.d.ts",
       "import": "./dist/src/browser.js"
-    }
+    },
+    "./cdn": {
+      "types": "./dist/src/browser.d.ts",
+      "import": "./dist/browser/mesh-data-tile-browser.es.js"
+    },
+    "./cdn/iife": "./dist/browser/mesh-data-tile-browser.iife.js"
   },
-  "bin": {
-    "mesh-tile": "dist/src/cli.js"
+  "publishConfig": {
+    "access": "public"
   },
+  "workspaces": [
+    "packages/*",
+    "examples/*"
+  ],
   "scripts": {
-    "build": "tsc -p tsconfig.json",
-    "test": "pnpm run build && node --test dist/test/*.test.js",
-    "cli": "tsx src/cli.ts",
-    "example:maplibre:tiles": "pnpm run build && node dist/examples/maplibre-jismesh/generate-tiles.js",
-    "example:maplibre": "pnpm run example:maplibre:tiles && vite --config examples/maplibre-jismesh/vite.config.ts",
-    "example:maplibre:build": "pnpm run example:maplibre:tiles && vite build --config examples/maplibre-jismesh/vite.config.ts"
+    "clean": "rm -rf dist/src dist/test dist/browser",
+    "build:types": "pnpm run clean && tsc -p tsconfig.json",
+    "build:browser": "vite build --config vite.browser.config.ts",
+    "build": "pnpm run build:types && pnpm run build:browser",
+    "prepack": "pnpm run build",
+    "prepublishOnly": "pnpm test",
+    "test": "pnpm run build:types && node --test dist/test/*.test.js",
+    "workspace:build": "pnpm -r build",
+    "workspace:test": "pnpm -r --if-present test",
+    "cli": "pnpm --filter mesh-data-tile-cli run dev --",
+    "example:maplibre:tiles": "pnpm --filter mesh-data-tile-maplibre-example run generate:tiles",
+    "example:maplibre": "pnpm --filter mesh-data-tile-maplibre-example run dev",
+    "example:maplibre:build": "pnpm --filter mesh-data-tile-maplibre-example run build"
   },
   "files": [
-    "dist"
+    "dist/src",
+    "dist/browser"
   ],
-  "keywords": [],
+  "keywords": [
+    "mesh-tile",
+    "maplibre",
+    "geospatial",
+    "vector-tile",
+    "raster"
+  ],
   "author": "",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/KotobaMedia/mesh-data-tile.git"
+  },
+  "bugs": {
+    "url": "https://github.com/KotobaMedia/mesh-data-tile/issues"
+  },
+  "homepage": "https://github.com/KotobaMedia/mesh-data-tile#readme",
+  "engines": {
+    "node": ">=20"
+  },
+  "peerDependencies": {
+    "maplibre-gl": "^5.17.0"
+  },
+  "peerDependenciesMeta": {
+    "maplibre-gl": {
+      "optional": true
+    }
+  },
   "dependencies": {
     "@maplibre/geojson-vt": "^5.0.4",
     "@maplibre/vt-pbf": "^4.2.1",
-    "commander": "^14.0.3",
     "japanmesh": "^1.3.5"
   },
   "devDependencies": {
     "@tsconfig/node24": "^24.0.4",
     "@types/node": "^24.0.0",
-    "maplibre-gl": "^5.18.0",
     "tsx": "^4.21.0",
     "typescript": "^5.9.2",
     "vite": "^7.3.1"

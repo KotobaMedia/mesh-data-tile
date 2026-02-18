@@ -1,11 +1,17 @@
 # mesh-data-tile
 
-Reference implementation for Mesh Tile Format v1 (`MTI1`) with a TypeScript CLI and library API.
+Reference implementation for Mesh Tile Format v1 (`MTI1`) with a TypeScript library package and a separate CLI package.
 
 ## Prerequisites
 
 - Node.js 20+
 - `pnpm`
+
+## Workspace packages
+
+- `mesh-data-tile` (root): library package.
+- `mesh-data-tile-cli`: CLI package.
+- `mesh-data-tile-maplibre-example`: example app package.
 
 ## Help
 
@@ -198,6 +204,8 @@ await encodeTileToFile('out.tile', {
 Use `createMapLibreSourceHandler` to fetch mesh data tiles, decode them, and convert each cell to GeoJSON polygons.
 For browser apps, import from `mesh-data-tile/browser` (Node-only file helpers are not included in that entrypoint).
 
+`maplibre-gl` is a peer dependency of `mesh-data-tile`.
+
 ```ts
 import { createMapLibreSourceHandler } from 'mesh-data-tile/browser';
 
@@ -263,6 +271,22 @@ createMapLibreMeshTileProtocol({
 ```
 
 By default, zoom is unconstrained.
+
+## Browser CDN build
+
+The package ships a browser bundle with vendored runtime deps (`@maplibre/geojson-vt`, `@maplibre/vt-pbf`, and `japanmesh`):
+
+- ESM: `mesh-data-tile/cdn`
+- IIFE/global: `mesh-data-tile/cdn/iife` (global name: `MeshDataTile`)
+
+Example ESM usage from an npm CDN:
+
+```html
+<script type="module">
+  import { createMapLibreMeshTileProtocol } from 'https://unpkg.com/mesh-data-tile/dist/browser/mesh-data-tile-browser.es.js';
+  console.log(typeof createMapLibreMeshTileProtocol);
+</script>
+```
 
 ## Run tests
 

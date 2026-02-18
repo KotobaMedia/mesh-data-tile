@@ -3,7 +3,7 @@
 Run:
 
 ```bash
-pnpm example:maplibre
+pnpm --filter mesh-data-tile-maplibre-example run dev
 ```
 
 Then open:
@@ -67,5 +67,5 @@ map.on('load', () => {
 Generate only the static tiles:
 
 ```bash
-pnpm example:maplibre:tiles
+pnpm --filter mesh-data-tile-maplibre-example run generate:tiles
 ```

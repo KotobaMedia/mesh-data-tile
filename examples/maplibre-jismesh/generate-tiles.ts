@@ -1,8 +1,6 @@
 import { mkdir, rm, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { japanmesh } from 'japanmesh';
-import { toJisMeshPoint } from '../../src/jismesh.js';
-import { encodeTile } from '../../src/tile-format.js';
+import { JIS_MESH_LEVELS, encodeTile, getJisMeshCodesWithinBounds, toJisMeshPoint } from 'mesh-data-tile';
 
 type Bounds = {
   west: number;
@@ -13,12 +11,20 @@ type Bounds = {
 
 const GRID_ROWS = 8;
 const GRID_COLS = 8;
-const OUTPUT_DIR = join(process.cwd(), 'examples', 'maplibre-jismesh', 'public', 'tiles');
+const OUTPUT_DIR = join(process.cwd(), 'public', 'tiles');
 
 function getAllLv1MeshCodes(): string[] {
-  const codes = japanmesh.getCodes();
-  if (!codes || codes.length === 0) {
-    throw new Error('japanmesh.getCodes() returned no LV1 codes.');
+  const codes = getJisMeshCodesWithinBounds(
+    {
+      west: 120,
+      south: 20,
+      east: 154,
+      north: 48,
+    },
+    JIS_MESH_LEVELS.lv1
+  );
+  if (codes.length === 0) {
+    throw new Error('No LV1 mesh codes were resolved from bounds.');
   }
   return [...codes].sort();
 }

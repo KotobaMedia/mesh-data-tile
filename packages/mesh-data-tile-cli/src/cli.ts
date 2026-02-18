@@ -1,9 +1,17 @@
 #!/usr/bin/env node
 import { readFile, writeFile } from 'node:fs/promises';
 import { Command } from 'commander';
-import { decodeTileToCsv, encodeTileToFile, inspectTileToText } from './index.js';
-import type { TileEncodeInput, DType, Endianness, CompressionMode, MeshKind } from './types.js';
-import { TileFormatError } from './errors.js';
+import {
+  decodeTileToCsv,
+  encodeTileToFile,
+  inspectTileToText,
+  TileFormatError,
+  type TileEncodeInput,
+  type DType,
+  type Endianness,
+  type CompressionMode,
+  type MeshKind,
+} from 'mesh-data-tile';
 
 const DTYPE_VALUES: DType[] = ['uint8', 'int8', 'uint16', 'int16', 'uint32', 'int32', 'float32', 'float64'];
 const ENDIAN_VALUES: Endianness[] = ['little', 'big'];
