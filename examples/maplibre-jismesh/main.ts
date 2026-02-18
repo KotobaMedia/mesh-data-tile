@@ -135,10 +135,6 @@ async function main(): Promise<void> {
       popup.remove();
     });
   });
-
-  map.on('remove', () => {
-    maplibregl.removeProtocol(PROTOCOL_SCHEME);
-  });
 }
 
 main().catch((error: unknown) => {
