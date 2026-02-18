@@ -19,7 +19,8 @@ map/data ワークフローで高効率に数値データをタイル配信す�
 | メタデータ | バイナリヘッダー内で自己記述的に保持 | 外部定義や暗黙ルールに依存しがち | レイヤー/フィーチャ属性はあるが、ラスタタイル向けのネイティブヘッダーはない |
 | JIS メッシュ対応 | `jis-x0410` の mesh kind と tile identity をネイティブ表現 | JIS メッシュ identity モデルはネイティブ非対応 | JIS メッシュ identity モデルはネイティブ非対応 |
 
-仕様の詳細: [Mesh Tile Format v1 spec](spec/tile-format-v1.md)
+- 仕様の詳細: [Mesh Tile Format v1 spec](spec/tile-format-v1.md)
+- [MapLibre addProtocol アダプターを使ったデモを見る](https://kotobamedia.github.io/mesh-data-tile/)
 
 ## 前提条件
 

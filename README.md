@@ -10,7 +10,7 @@ Meshtiles are binary tiles for numeric grid data. Each tile stores typed values 
 
 They are designed to deliver highly efficient numerical data in tiles for map/data workflows, including but not limited to XYZ tiles (for example, native JIS X0410 mesh tiles).
 
-## Meshtiles vs alternatives
+## Meshtiles vs the alternatives
 
 | Topic | Meshtiles (`MTI1`) | Numerical PNG tiles | Vector tiles (MVT) |
 | --- | --- | --- | --- |
@@ -19,7 +19,8 @@ They are designed to deliver highly efficient numerical data in tiles for map/da
 | Metadata | Internal, self-describing tile metadata in the binary header | Commonly external/implicit metadata conventions | Layer/feature properties exist, but not a native raster tile metadata header |
 | JIS mesh support | Native mesh kind + tile identity for `jis-x0410` | No native JIS mesh identity model | No native JIS mesh identity model |
 
-Specification details: [Mesh Tile Format v1 spec](spec/tile-format-v1.md)
+- Specification details: [Mesh Tile Format v1 spec](spec/tile-format-v1.md)
+- [See a demo using the MapLibre addProtocol adapter](https://kotobamedia.github.io/mesh-data-tile/)
 
 ## Prerequisites
 
