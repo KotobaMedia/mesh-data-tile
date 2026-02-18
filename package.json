@@ -1,6 +1,6 @@
 {
   "name": "mesh-data-tile",
-  "version": "1.0.0",
+  "version": "0.0.1",
   "description": "TypeScript CLI and library for Mesh Tile Format v1 (MTI1).",
   "type": "module",
   "main": "dist/src/index.js",
