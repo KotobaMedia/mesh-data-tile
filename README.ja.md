@@ -183,31 +183,24 @@ const inspected = inspectTile(encoded.bytes);
 const decoded = await decodeTile(encoded.bytes);
 ```
 
-CLI 出力相当の高レベルヘルパーを使う場合:
+高レベルヘルパーを使う場合（コアライブラリはランタイム非依存で、ファイル I/O は呼び出し側で実施）:
 
 ```ts
 import {
   decodeTile,
   decodeTileToCsv,
-  decodeTileFileToCsv,
-  encodeTileToFile,
-  inspectTileFile,
-  inspectTileToText,
+  encodeTile,
+  inspectTile,
 } from 'mesh-data-tile';
-import { readFile } from 'node:fs/promises';
-
-const inspectResult = await inspectTileFile('in.tile');
-console.log(inspectResult.text);
-
-const { csv } = await decodeTileFileToCsv('in.tile');
-console.log(csv);
+import { readFile, writeFile } from 'node:fs/promises';
 
 const bytes = new Uint8Array(await readFile('in.tile'));
-const fromBytes = inspectTileToText(bytes);
-const csvFromBytes = await decodeTileToCsv(bytes);
+const inspected = inspectTile(bytes);
+const { csv } = await decodeTileToCsv(bytes);
 const decoded = await decodeTile(bytes);
+console.log(inspected.header.tile_id, csv);
 
-await encodeTileToFile('out.tile', {
+const encoded = await encodeTile({
   tile_id: 99n,
   mesh_kind: 'jis-x0410',
   rows: 2,
@@ -217,7 +210,10 @@ await encodeTileToFile('out.tile', {
   endianness: 'little',
   data: [1, 2, 3, 4],
 });
+await writeFile('out.tile', encoded.bytes);
 ```
+
+CLI と同等の inspect テキスト出力やファイルパス直接処理は `mesh-data-tile-cli` を利用してください。
 
 ## MapLibre addProtocol 対応
 

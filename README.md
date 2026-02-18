@@ -183,31 +183,24 @@ const inspected = inspectTile(encoded.bytes);
 const decoded = await decodeTile(encoded.bytes);
 ```
 
-Use high-level helpers equivalent to CLI output:
+Use high-level helpers (core library is runtime-neutral; file I/O is caller-managed):
 
 ```ts
 import {
   decodeTile,
   decodeTileToCsv,
-  decodeTileFileToCsv,
-  encodeTileToFile,
-  inspectTileFile,
-  inspectTileToText,
+  encodeTile,
+  inspectTile,
 } from 'mesh-data-tile';
-import { readFile } from 'node:fs/promises';
-
-const inspectResult = await inspectTileFile('in.tile');
-console.log(inspectResult.text);
-
-const { csv } = await decodeTileFileToCsv('in.tile');
-console.log(csv);
+import { readFile, writeFile } from 'node:fs/promises';
 
 const bytes = new Uint8Array(await readFile('in.tile'));
-const fromBytes = inspectTileToText(bytes);
-const csvFromBytes = await decodeTileToCsv(bytes);
+const inspected = inspectTile(bytes);
+const { csv } = await decodeTileToCsv(bytes);
 const decoded = await decodeTile(bytes);
+console.log(inspected.header.tile_id, csv);
 
-await encodeTileToFile('out.tile', {
+const encoded = await encodeTile({
   tile_id: 99n,
   mesh_kind: 'jis-x0410',
   rows: 2,
@@ -217,7 +210,10 @@ await encodeTileToFile('out.tile', {
   endianness: 'little',
   data: [1, 2, 3, 4],
 });
+await writeFile('out.tile', encoded.bytes);
 ```
+
+For CLI-style inspect text output and file-path based operations, use `mesh-data-tile-cli`.
 
 ## MapLibre addProtocol support
 

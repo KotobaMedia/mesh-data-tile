@@ -6,17 +6,12 @@ import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import {
   decodeTile,
-  decodeTileFileToCsv,
   decodeTileToCsv,
   decodeXyzTileId,
   encodeTile,
-  encodeTileToFile,
   encodeXyzTileId,
   formatDecodedCsv,
-  formatInspectOutput,
   inspectTile,
-  inspectTileFile,
-  inspectTileToText,
 } from '../src/index.js';
 import { TileFormatError } from '../src/errors.js';
 
@@ -346,33 +341,24 @@ describe('mesh tile v1 conformance', () => {
     );
   });
 
-  it('library api inspect text includes xyz coordinates', async () => {
-    const input = new Uint8Array(await fs.readFile(join(fixturesDir, 'xyz-uncompressed.tile')));
-    const result = inspectTileToText(input);
-    const fromFormatter = formatInspectOutput(inspectTile(input));
-
-    assert.equal(result.text, fromFormatter);
-    assert.match(result.text, /XYZ Zoom: 12/);
-    assert.match(result.text, /XYZ X: 3639/);
-    assert.match(result.text, /XYZ Y: 1612/);
-  });
-
-  it('library api file helpers roundtrip', async () => {
+  it('library api roundtrip with caller-managed file io', async () => {
     const tempDir = await fs.mkdtemp(join(tmpdir(), 'mesh-data-tile-'));
     const outputPath = join(tempDir, 'api-roundtrip.tile');
 
     try {
-      await encodeTileToFile(outputPath, {
+      const encoded = await encodeTile({
         ...tileTemplate(),
         tile_id: 2001n,
         dtype: 'uint16',
         data: [10, 20, 30, 40],
       });
+      await fs.writeFile(outputPath, encoded.bytes);
 
-      const inspected = await inspectTileFile(outputPath);
-      const decoded = await decodeTileFileToCsv(outputPath);
+      const bytes = new Uint8Array(await fs.readFile(outputPath));
+      const inspected = inspectTile(bytes);
+      const decoded = await decodeTileToCsv(bytes);
 
-      assert.equal(inspected.info.header.tile_id, 2001n);
+      assert.equal(inspected.header.tile_id, 2001n);
       assert.equal(decoded.csv, ['x,y,b0', '0,0,10', '1,0,20', '0,1,30', '1,1,40'].join('\n'));
     } finally {
       await fs.rm(tempDir, { recursive: true, force: true });

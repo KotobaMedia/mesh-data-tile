@@ -3,9 +3,11 @@ import { readFile, writeFile } from 'node:fs/promises';
 import { Command } from 'commander';
 import {
   decodeTileToCsv,
-  encodeTileToFile,
-  inspectTileToText,
+  decodeXyzTileId,
+  encodeTile,
+  inspectTile,
   TileFormatError,
+  type InspectTileResult,
   type TileEncodeInput,
   type DType,
   type Endianness,
@@ -36,6 +38,11 @@ interface EncodeCommandOptions {
   endianness?: string;
   compression?: string;
   noData?: string;
+}
+
+interface InspectTileTextResult {
+  info: InspectTileResult;
+  text: string;
 }
 
 function fail(message: string, code = 1): never {
@@ -114,6 +121,57 @@ async function writeOutput(path: string | undefined, content: Uint8Array | strin
   await writeFile(path, content);
 }
 
+function formatInspectOutput(info: InspectTileResult): string {
+  const lines = [
+    `Format Major: ${info.header.format_major}`,
+    `Tile ID: ${info.header.tile_id.toString()}`,
+    `Mesh Kind: ${info.header.mesh_kind}`,
+    `DType: ${info.header.dtype}`,
+    `Endianness: ${info.header.endianness}`,
+    `Compression: ${info.header.compression}`,
+    `Rows: ${info.header.dimensions.rows}`,
+    `Cols: ${info.header.dimensions.cols}`,
+    `Bands: ${info.header.dimensions.bands}`,
+    `NoData: ${info.header.no_data === null ? 'null' : String(info.header.no_data)}`,
+    `Uncompressed Payload Bytes: ${info.header.payload.uncompressed_bytes}`,
+    `Compressed Payload Bytes: ${info.header.payload.compressed_bytes}`,
+    `Payload CRC32: ${info.header.checksum.payload_crc32}`,
+    `Header CRC32: ${info.header.checksum.header_crc32}`,
+    `Header Length: ${info.header_length}`,
+    `Payload Offset: ${info.payload_offset}`,
+    `Payload Length: ${info.payload_length}`,
+  ];
+
+  if (info.header.mesh_kind === 'xyz') {
+    const xyz = decodeXyzTileId(info.header.tile_id);
+    lines.push(`XYZ Zoom: ${xyz.zoom}`);
+    lines.push(`XYZ X: ${xyz.x}`);
+    lines.push(`XYZ Y: ${xyz.y}`);
+    lines.push(`XYZ Quadkey Integer: ${xyz.quadkey_integer.toString()}`);
+  }
+
+  return lines.join('\n');
+}
+
+function inspectTileToText(bytes: Uint8Array): InspectTileTextResult {
+  const info = inspectTile(bytes);
+  return {
+    info,
+    text: formatInspectOutput(info),
+  };
+}
+
+async function decodeTileFileToCsv(path: string) {
+  const bytes = new Uint8Array(await readFile(path));
+  return decodeTileToCsv(bytes);
+}
+
+async function encodeTileToFile(path: string, input: TileEncodeInput) {
+  const encoded = await encodeTile(input);
+  await writeFile(path, encoded.bytes);
+  return encoded;
+}
+
 async function runInspect(inputPath: string): Promise<void> {
   const input = new Uint8Array(await readFile(inputPath));
   const result = inspectTileToText(input);
@@ -121,8 +179,7 @@ async function runInspect(inputPath: string): Promise<void> {
 }
 
 async function runDecode(inputPath: string, options: DecodeCommandOptions): Promise<void> {
-  const input = new Uint8Array(await readFile(inputPath));
-  const result = await decodeTileToCsv(input);
+  const result = await decodeTileFileToCsv(inputPath);
   await writeOutput(options.output, result.csv);
 }
 
