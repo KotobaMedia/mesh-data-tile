@@ -1,5 +1,7 @@
 # mesh-data-tile
 
+[日本語版はこちら (README.ja.md)](README.ja.md)
+
 Reference implementation for Mesh Tile Format v1 (`MTI1`) with a TypeScript library package and a separate CLI package.
 
 ## What are meshtiles?
@@ -8,7 +10,7 @@ Meshtiles are binary tiles for numeric grid data. Each tile stores typed values 
 
 They are designed to deliver highly efficient numerical data in tiles for map/data workflows, including but not limited to XYZ tiles (for example, native JIS X0410 mesh tiles).
 
-## Why use meshtiles instead of numerical PNG or vector tiles (MVT)?
+## Meshtiles vs alternatives
 
 | Topic | Meshtiles (`MTI1`) | Numerical PNG tiles | Vector tiles (MVT) |
 | --- | --- | --- | --- |

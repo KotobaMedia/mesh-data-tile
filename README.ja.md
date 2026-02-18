@@ -1,5 +1,7 @@
 # mesh-data-tile
 
+[English version (README.md)](README.md)
+
 Mesh Tile Format v1 (`MTI1`) のリファレンス実装です。TypeScript のライブラリパッケージと、別パッケージの CLI を含みます。
 
 ## meshtiles とは？
@@ -8,7 +10,7 @@ meshtiles は、数値グリッドデータ向けのバイナリタイルです�
 
 map/data ワークフローで高効率に数値データをタイル配信するために設計されており、XYZ タイルに限定されません（例: JIS X0410 メッシュタイルをネイティブに扱えます）。
 
-## 数値 PNG タイルやベクタータイル（MVT）ではなく、meshtiles を使う理由
+## Meshtiles と代替手法の比較
 
 | 項目 | Meshtiles (`MTI1`) | Numerical PNG tiles | Vector tiles (MVT) |
 | --- | --- | --- | --- |
