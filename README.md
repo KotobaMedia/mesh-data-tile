@@ -2,6 +2,23 @@
 
 Reference implementation for Mesh Tile Format v1 (`MTI1`) with a TypeScript library package and a separate CLI package.
 
+## What are meshtiles?
+
+Meshtiles are binary tiles for numeric grid data. Each tile stores typed values (`rows x cols x bands`) plus core metadata (dtype, endianness, compression, no-data marker, mesh kind, and tile id) inside the tile itself.
+
+They are designed to deliver highly efficient numerical data in tiles for map/data workflows, including but not limited to XYZ tiles (for example, native JIS X0410 mesh tiles).
+
+## Why use meshtiles instead of numerical PNG or vector tiles (MVT)?
+
+| Topic | Meshtiles (`MTI1`) | Numerical PNG tiles | Vector tiles (MVT) |
+| --- | --- | --- | --- |
+| Main data model | Typed numeric raster/grid values | Image channels with numeric packing conventions | Vector geometries + feature attributes |
+| Band support | Native multi-band numeric payload (`bands` in header) | Usually constrained to PNG channel model (typically RGBA) and custom packing | No native raster band model; numeric grids require conversion/workarounds |
+| Metadata | Internal, self-describing tile metadata in the binary header | Commonly external/implicit metadata conventions | Layer/feature properties exist, but not a native raster tile metadata header |
+| JIS mesh support | Native mesh kind + tile identity for `jis-x0410` | No native JIS mesh identity model | No native JIS mesh identity model |
+
+Specification details: [Mesh Tile Format v1 spec](spec/tile-format-v1.md)
+
 ## Prerequisites
 
 - Node.js 20+
@@ -199,45 +216,7 @@ await encodeTileToFile('out.tile', {
 });
 ```
 
-## MapLibre source handler
-
-Use `createMapLibreSourceHandler` to fetch mesh data tiles, decode them, and convert each cell to GeoJSON polygons.
-For browser apps, import from `mesh-data-tile/browser` (Node-only file helpers are not included in that entrypoint).
-
-`maplibre-gl` is a peer dependency of `mesh-data-tile`.
-
-```ts
-import { createMapLibreSourceHandler } from 'mesh-data-tile/browser';
-
-const handler = createMapLibreSourceHandler({
-  urlTemplate: 'https://example.com/tiles/{z}/{x}/{y}.tile',
-});
-
-const { geojson } = await handler.fetchTile({ z: 12, x: 3639, y: 1612 });
-```
-
-JIS mesh placeholders supported by `japanmesh`:
-
-- `{jismesh-lv1}` or `{jismesh-80000}`
-- `{jismesh-lv2}` or `{jismesh-10000}`
-- `{jismesh-x5}` or `{jismesh-5000}`
-- `{jismesh-x2}` or `{jismesh-2000}`
-- `{jismesh-lv3}` or `{jismesh-1000}`
-- `{jismesh-lv4}` or `{jismesh-500}`
-- `{jismesh-lv5}` or `{jismesh-250}`
-- `{jismesh-lv6}` or `{jismesh-125}`
-
-Example:
-
-```ts
-const handler = createMapLibreSourceHandler({
-  urlTemplate: 'https://example.com/mesh/{jismesh-lv1}/{jismesh-lv3}.tile',
-});
-```
-
-JIS placeholders are resolved from the chosen point of the requested XYZ tile (`center` by default).
-
-For MapLibre tiled loading, use the built-in protocol helpers:
+## MapLibre addProtocol support
 
 ```ts
 import maplibregl from 'maplibre-gl';
@@ -251,7 +230,7 @@ maplibregl.addProtocol('meshtiles', protocol);
 
 map.addSource('jismesh-example', {
   type: 'vector',
-  url: `meshtiles://https://example.com/mesh/{jismesh-lv1}.tile`,
+  url: `meshtiles://https://kotobamedia.github.io/mesh-data-tile/tiles/{jismesh-lv1}.tile`,
 });
 
 map.addLayer({
