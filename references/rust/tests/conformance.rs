@@ -1,12 +1,17 @@
 use std::fs;
 use std::path::PathBuf;
 
-use mesh_data_tile_rs::{
+use mesh_data_tile::{
     decode_payload_values, decode_tile_minimal, CompressionMode, DType, MeshKind, TileErrorCode,
 };
 
 fn fixture_path(name: &str) -> PathBuf {
-    PathBuf::from("../../test/fixtures").join(name)
+    PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("..")
+        .join("..")
+        .join("test")
+        .join("fixtures")
+        .join(name)
 }
 
 fn decode_xyz_tile_id(tile_id: u64) -> (u8, u32, u32) {

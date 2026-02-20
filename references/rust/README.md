@@ -27,10 +27,53 @@ From `references/rust`:
 cargo test
 ```
 
+## Release flow (crates.io with cargo-release)
+
+Pre-requisites:
+- A crates.io token with publish permission.
+- `cargo-release` installed (`cargo install cargo-release --locked`).
+
+One-time auth:
+
+```bash
+cargo login <CRATES_IO_TOKEN>
+```
+
+Preflight checks (from repository root):
+
+```bash
+cargo test -p mesh-data-tile-rs
+cargo package -p mesh-data-tile-rs
+```
+
+Dry-run a release (from `references/rust`):
+
+```bash
+cargo release patch --dry-run
+```
+
+Publish a release (from `references/rust`):
+
+```bash
+cargo release patch --execute
+```
+
+Use `minor` or `major` instead of `patch` when needed:
+
+```bash
+cargo release minor --dry-run
+cargo release major --dry-run
+```
+
+Current release config in `Cargo.toml`:
+- Releases are allowed only from `main`.
+- Tag format is `mesh-data-tile-rs-v<version>`.
+- Release commit message format is `chore(release): mesh-data-tile-rs v<version>`.
+
 ## Example
 
 ```rust
-use mesh_data_tile_rs::{
+use mesh_data_tile::{
     decode_payload_values, decode_tile_minimal, encode_payload_values, encode_tile,
     CompressionMode, DType, Endianness, MeshKind, TileDimensions, TileEncodeInput,
 };
@@ -52,5 +95,5 @@ let encoded = encode_tile(TileEncodeInput {
 let decoded = decode_tile_minimal(&encoded.bytes)?;
 let values = decode_payload_values(decoded.header.dtype, decoded.header.endianness, &decoded.payload)?;
 assert_eq!(values, vec![10.0, 20.0, 30.0, 40.0]);
-# Ok::<(), mesh_data_tile_rs::TileError>(())
+# Ok::<(), mesh_data_tile::TileError>(())
 ```

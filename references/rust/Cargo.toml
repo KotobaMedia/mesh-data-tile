@@ -1,10 +1,22 @@
 [package]
-name = "mesh-data-tile-rs"
+name = "mesh-data-tile"
 version = "0.1.0"
 edition = "2021"
 description = "Rust reference implementation for Mesh Tile Format v1 (MTI1)"
 license = "MIT"
-publish = false
+repository = "https://github.com/KotobaMedia/mesh-data-tile"
+homepage = "https://github.com/KotobaMedia/mesh-data-tile"
+documentation = "https://docs.rs/mesh-data-tile-rs"
+readme = "README.md"
+keywords = ["mesh", "tile", "geospatial", "raster", "encoding"]
+categories = ["encoding", "science::geo"]
+
+[package.metadata.release]
+allow-branch = ["main"]
+consolidate-commits = true
+pre-release-commit-message = "chore(release): {{crate_name}} v{{version}}"
+tag-name = "{{crate_name}}-v{{version}}"
+tag-message = "Release {{crate_name}} v{{version}}"
 
 [dependencies]
 crc32fast = "1.4"
