@@ -13,6 +13,11 @@ Out of scope:
 - GeoJSON/vector conversion.
 - Map rendering integrations.
 
+JIS root-tile recommendation:
+- For `mesh_kind=JisX0410`, `tile_id=0` is a recommended convention for a root tile
+  representing the full JIS mesh scope (`west=122`, `south=20`, `east=154`, `north=46`).
+- This crate treats `tile_id` as metadata for JIS tiles and accepts `0` as a valid value.
+
 ## Run tests
 
 From repository root:

@@ -95,7 +95,7 @@ pnpm cli decode test/fixtures/uncompressed.tile --output decoded.csv
 
 `tile_id` の意味:
 
-- `mesh_kind=jis-x0410`: `tile_id` は JIS メッシュコード整数です。
+- `mesh_kind=jis-x0410`: `tile_id` は JIS メッシュコード整数です。推奨: `tile_id=0` を JIS ルートタイル（JIS メッシュ対象範囲全体: `west=122`, `south=20`, `east=154`, `north=46`）として扱います。
 - `mesh_kind=xyz`: `tile_id` は `(zoom << 58) | quadkey_integer` でパックされます。`quadkey_integer` は quadkey を base-4 整数として解釈した値で、zoom の最大値は `29` です。
 
 任意メタデータ:

@@ -101,7 +101,7 @@ Required metadata:
 
 `tile_id` semantics:
 
-- `mesh_kind=jis-x0410`: `tile_id` is the JIS mesh code integer.
+- `mesh_kind=jis-x0410`: `tile_id` is the JIS mesh code integer. Recommendation: use `tile_id=0` as a root tile for the full JIS mesh scope (`west=122`, `south=20`, `east=154`, `north=46`).
 - `mesh_kind=xyz`: `tile_id` is packed as `(zoom << 58) | quadkey_integer`, where `quadkey_integer` is the quadkey interpreted as base-4, and zoom max is `29`.
 
 Optional metadata:

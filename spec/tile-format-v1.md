@@ -63,6 +63,8 @@ File := FixedHeaderV1 || Payload
 ### 4.4 `tile_id` (u64) by `mesh_kind`
 
 - `mesh_kind=JIS_X0410` (`1`): `tile_id` is the JIS mesh code value as an unsigned integer.
+  Recommended convention for interoperability: `tile_id=0` may be used as a JIS root tile meaning
+  the full JIS mesh scope (`west=122`, `south=20`, `east=154`, `north=46`).
 - `mesh_kind=XYZ` (`2`): `tile_id` stores zoom + quadkey integer in a single u64.
 - Bits `63..58` (most significant 6 bits): `zoom` (`0..29`)
 - Bits `57..0`: `quadkey_integer` (the XYZ tile quadkey interpreted as base-4 integer)

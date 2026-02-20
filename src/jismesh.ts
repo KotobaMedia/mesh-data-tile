@@ -22,7 +22,18 @@ export interface JisMeshBounds {
   west: number;
 }
 
+export const JIS_MESH_ROOT_TILE_ID = 0n;
+
+// Recommended JIS root tile extent (`tile_id=0`) used by this repository.
+export const JIS_MESH_SCOPE_BOUNDS: Readonly<JisMeshBounds> = Object.freeze({
+  west: 122,
+  south: 20,
+  east: 154,
+  north: 46,
+});
+
 const JIS_MESH_LEVEL_SET = new Set<number>(Object.values(JIS_MESH_LEVELS));
+const JIS_MESH_ROOT_TILE_CODE = JIS_MESH_ROOT_TILE_ID.toString();
 
 export const JIS_MESH_PLACEHOLDER_LEVELS: Readonly<Record<string, JisMeshLevel>> = Object.freeze({
   lv1: JIS_MESH_LEVELS.lv1,
@@ -91,6 +102,33 @@ export function toJisMeshPoint(
   level?: JisMeshLevel
 ): [number, number] {
   const code = normalizeMeshCode(meshCode);
+  if (code === JIS_MESH_ROOT_TILE_CODE) {
+    if (level !== undefined) {
+      throw createError(
+        'INVALID_FIELD_VALUE',
+        'JIS root tile "0" does not have a JIS mesh level. Omit the level argument.'
+      );
+    }
+
+    switch (point) {
+      case 'sw':
+        return [JIS_MESH_SCOPE_BOUNDS.south, JIS_MESH_SCOPE_BOUNDS.west];
+      case 'nw':
+        return [JIS_MESH_SCOPE_BOUNDS.north, JIS_MESH_SCOPE_BOUNDS.west];
+      case 'ne':
+        return [JIS_MESH_SCOPE_BOUNDS.north, JIS_MESH_SCOPE_BOUNDS.east];
+      case 'se':
+        return [JIS_MESH_SCOPE_BOUNDS.south, JIS_MESH_SCOPE_BOUNDS.east];
+      case 'center':
+        return [
+          (JIS_MESH_SCOPE_BOUNDS.north + JIS_MESH_SCOPE_BOUNDS.south) / 2,
+          (JIS_MESH_SCOPE_BOUNDS.east + JIS_MESH_SCOPE_BOUNDS.west) / 2,
+        ];
+      default:
+        throw createError('INVALID_FIELD_VALUE', `Unsupported JIS mesh point "${point as string}".`);
+    }
+  }
+
   const detectedLevel = toJisMeshLevel(code);
   if (detectedLevel === null) {
     throw createError('INVALID_FIELD_VALUE', `Invalid JIS mesh code "${code}".`);

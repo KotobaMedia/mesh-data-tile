@@ -5,6 +5,8 @@ import { describe, it } from 'node:test';
 import { fromGeojsonVt } from '@maplibre/vt-pbf';
 import {
   JIS_MESH_LEVELS,
+  JIS_MESH_ROOT_TILE_ID,
+  JIS_MESH_SCOPE_BOUNDS,
   MAPLIBRE_MESH_PROTOCOL_DEFAULT_LAYER_NAME,
   MAPLIBRE_MESH_PROTOCOL_DEFAULT_VECTOR_EXTENT,
   MAPLIBRE_MESH_PROTOCOL_DEFAULT_VECTOR_VERSION,
@@ -12,6 +14,7 @@ import {
   createMapLibreSourceHandler,
   decodeTile,
   decodedMeshTileToGeoJson,
+  encodeTile,
   getJisMeshCodesWithinBounds,
   renderMeshTileUrlTemplate,
   toJisMeshCode,
@@ -86,6 +89,19 @@ describe('maplibre source helpers', () => {
     assertAlmostEqual(se[1], 139.725);
     assertAlmostEqual(center[0], 35.704166666666666);
     assertAlmostEqual(center[1], 139.71875);
+  });
+
+  it('maps tile_id=0 to the recommended JIS root-tile scope', () => {
+    const sw = toJisMeshPoint(JIS_MESH_ROOT_TILE_ID, 'sw');
+    const ne = toJisMeshPoint(JIS_MESH_ROOT_TILE_ID, 'ne');
+    const center = toJisMeshPoint(JIS_MESH_ROOT_TILE_ID, 'center');
+
+    assert.deepEqual(sw, [JIS_MESH_SCOPE_BOUNDS.south, JIS_MESH_SCOPE_BOUNDS.west]);
+    assert.deepEqual(ne, [JIS_MESH_SCOPE_BOUNDS.north, JIS_MESH_SCOPE_BOUNDS.east]);
+    assert.deepEqual(center, [
+      (JIS_MESH_SCOPE_BOUNDS.north + JIS_MESH_SCOPE_BOUNDS.south) / 2,
+      (JIS_MESH_SCOPE_BOUNDS.east + JIS_MESH_SCOPE_BOUNDS.west) / 2,
+    ]);
   });
 
   it('resolves japanmesh codes within bounds', () => {
@@ -171,6 +187,33 @@ describe('maplibre source helpers', () => {
       b1: 140,
       b2: 240,
     });
+  });
+
+  it('converts decoded JIS root tile (tile_id=0) to full-scope GeoJSON polygons', async () => {
+    const encoded = await encodeTile({
+      tile_id: JIS_MESH_ROOT_TILE_ID,
+      mesh_kind: 'jis-x0410',
+      rows: 1,
+      cols: 1,
+      bands: 1,
+      dtype: 'uint8',
+      endianness: 'little',
+      compression: 'none',
+      no_data: null,
+      data: [7],
+    });
+
+    const decoded = await decodeTile(encoded.bytes);
+    const geojson = decodedMeshTileToGeoJson(decoded);
+
+    assert.equal(geojson.features.length, 1);
+    assert.deepEqual(geojson.features[0].geometry.coordinates[0], [
+      [JIS_MESH_SCOPE_BOUNDS.west, JIS_MESH_SCOPE_BOUNDS.south],
+      [JIS_MESH_SCOPE_BOUNDS.east, JIS_MESH_SCOPE_BOUNDS.south],
+      [JIS_MESH_SCOPE_BOUNDS.east, JIS_MESH_SCOPE_BOUNDS.north],
+      [JIS_MESH_SCOPE_BOUNDS.west, JIS_MESH_SCOPE_BOUNDS.north],
+      [JIS_MESH_SCOPE_BOUNDS.west, JIS_MESH_SCOPE_BOUNDS.south],
+    ]);
   });
 
   it('fetches, decodes, and converts tiles via maplibre source handler', async () => {

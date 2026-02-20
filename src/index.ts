@@ -20,6 +20,8 @@ export type {
 export {
   JIS_MESH_LEVELS,
   JIS_MESH_PLACEHOLDER_LEVELS,
+  JIS_MESH_ROOT_TILE_ID,
+  JIS_MESH_SCOPE_BOUNDS,
   toJisMeshLevel,
   toJisMeshCode,
   toJisMeshPoint,
