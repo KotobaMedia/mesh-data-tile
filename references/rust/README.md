@@ -15,8 +15,15 @@ Out of scope:
 
 ## Run tests
 
+From repository root:
+
 ```bash
-cd references/rust
+cargo test -p mesh-data-tile-rs
+```
+
+From `references/rust`:
+
+```bash
 cargo test
 ```
 

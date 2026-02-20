@@ -39,13 +39,6 @@ A Rust reference implementation for MTI1 encode/decode (metadata + payload, no G
 
 - `references/rust`
 
-Run:
-
-```bash
-cd references/rust
-cargo test
-```
-
 ## Help
 
 ```bash

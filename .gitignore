@@ -4,3 +4,4 @@ packages/*/dist/
 examples/maplibre-jismesh/dist/
 examples/maplibre-jismesh/public/tiles/
 references/rust/target/
+target/

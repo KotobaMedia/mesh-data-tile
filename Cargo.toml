@@ -1,0 +1,3 @@
+[workspace]
+members = ["references/rust"]
+resolver = "2"
