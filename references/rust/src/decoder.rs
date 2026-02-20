@@ -92,7 +92,7 @@ pub fn decode_payload_values(
     payload: &[u8],
 ) -> Result<Vec<f64>> {
     let value_size = dtype.byte_size();
-    if payload.len() % value_size != 0 {
+    if !payload.len().is_multiple_of(value_size) {
         return Err(TileError::new(
             TileErrorCode::InvalidPayloadLength,
             format!(

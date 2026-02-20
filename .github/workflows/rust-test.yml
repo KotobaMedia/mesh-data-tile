@@ -29,5 +29,8 @@ jobs:
 
       - uses: actions-rust-lang/setup-rust-toolchain@v1
 
+      - name: Run clippy
+        run: cargo clippy -- -D warnings
+
       - name: Run Rust tests
-        run: cargo test -p mesh-data-tile
+        run: cargo test

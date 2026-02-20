@@ -96,16 +96,11 @@ impl DType {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum CompressionMode {
+    #[default]
     None,
     DeflateRaw,
-}
-
-impl Default for CompressionMode {
-    fn default() -> Self {
-        Self::None
-    }
 }
 
 impl CompressionMode {

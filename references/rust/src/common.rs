@@ -245,13 +245,11 @@ pub(crate) fn write_numeric_value(
             out.copy_from_slice(&bytes);
         }
         DType::Float32 => {
-            if !value.is_finite() {
-                if !(allow_float_nan && value.is_nan()) {
-                    return Err(TileError::new(
-                        TileErrorCode::InvalidFieldValue,
-                        format!("Non-finite value: {value}"),
-                    ));
-                }
+            if !(value.is_finite() || allow_float_nan && value.is_nan()) {
+                return Err(TileError::new(
+                    TileErrorCode::InvalidFieldValue,
+                    format!("Non-finite value: {value}"),
+                ));
             }
             let v = value as f32;
             if value.is_finite() && !v.is_finite() {
@@ -267,13 +265,11 @@ pub(crate) fn write_numeric_value(
             out.copy_from_slice(&bytes);
         }
         DType::Float64 => {
-            if !value.is_finite() {
-                if !(allow_float_nan && value.is_nan()) {
-                    return Err(TileError::new(
-                        TileErrorCode::InvalidFieldValue,
-                        format!("Non-finite value: {value}"),
-                    ));
-                }
+            if !(value.is_finite() || allow_float_nan && value.is_nan()) {
+                return Err(TileError::new(
+                    TileErrorCode::InvalidFieldValue,
+                    format!("Non-finite value: {value}"),
+                ));
             }
             let v = value;
             let bytes = match endianness {
