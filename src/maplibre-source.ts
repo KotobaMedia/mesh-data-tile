@@ -30,7 +30,7 @@ export interface MeshTileFeature {
   type: 'Feature';
   id: string;
   geometry: GeoJsonPolygon;
-  properties: Record<string, number>;
+  properties: Record<string, number | null>;
 }
 
 export interface MeshTileFeatureCollection {
@@ -315,13 +315,14 @@ export function decodedMeshTileToGeoJson(
       const west = bounds.west + col * lonStep;
       const east = west + lonStep;
 
-      const bandValues: number[] = [];
+      const bandValues: Array<number | null> = [];
       let isNoData = noData !== null;
       for (let band = 0; band < bands; band += 1) {
-        const value = Number(tile.data[dataIndex]);
+        const rawValue = tile.data[dataIndex];
+        const value = rawValue === null ? null : Number(rawValue);
         dataIndex += 1;
         bandValues.push(value);
-        if (isNoData && !Object.is(value, noData)) {
+        if (isNoData && value !== null) {
           isNoData = false;
         }
       }
@@ -330,7 +331,7 @@ export function decodedMeshTileToGeoJson(
         continue;
       }
 
-      const properties: Record<string, number> = {
+      const properties: Record<string, number | null> = {
         row,
         col,
       };

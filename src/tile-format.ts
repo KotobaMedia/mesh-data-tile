@@ -552,7 +552,12 @@ export async function decodeTile(bytes: Uint8Array): Promise<DecodedTile> {
     );
   }
 
-  const data = decodeValues(header.dtype, decompressed, header.endianness === 'little');
+  const decodedValues = decodeValues(header.dtype, decompressed, header.endianness === 'little');
+  const noData = header.no_data;
+  const data =
+    noData === null
+      ? decodedValues
+      : Array.from(decodedValues, (value) => (Object.is(value, noData) ? null : value));
   return {
     header,
     data,

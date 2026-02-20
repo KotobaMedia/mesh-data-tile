@@ -7,7 +7,7 @@ export interface DecodeTileCsvResult {
   csv: string;
 }
 
-export function formatDecodedCsv(values: ArrayLike<number>, rows: number, cols: number, bands: number): string {
+export function formatDecodedCsv(values: ArrayLike<number | null>, rows: number, cols: number, bands: number): string {
   const expected = rows * cols * bands;
   if (values.length !== expected) {
     throw createError(
@@ -23,7 +23,8 @@ export function formatDecodedCsv(values: ArrayLike<number>, rows: number, cols: 
     for (let col = 0; col < cols; col += 1) {
       const bandValues: string[] = [];
       for (let band = 0; band < bands; band += 1) {
-        bandValues.push(String(values[index]));
+        const value = values[index];
+        bandValues.push(value === null ? '' : String(value));
         index += 1;
       }
       lines.push(`${col},${row},${bandValues.join(',')}`);

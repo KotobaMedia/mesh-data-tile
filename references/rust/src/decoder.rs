@@ -90,7 +90,8 @@ pub fn decode_payload_values(
     dtype: DType,
     endianness: Endianness,
     payload: &[u8],
-) -> Result<Vec<f64>> {
+    no_data: Option<f64>,
+) -> Result<Vec<Option<f64>>> {
     let value_size = dtype.byte_size();
     if !payload.len().is_multiple_of(value_size) {
         return Err(TileError::new(
@@ -104,7 +105,14 @@ pub fn decode_payload_values(
 
     let mut values = Vec::with_capacity(payload.len() / value_size);
     for chunk in payload.chunks_exact(value_size) {
-        values.push(read_numeric_value(dtype, endianness, chunk)?);
+        let value = read_numeric_value(dtype, endianness, chunk)?;
+        if let Some(marker) = no_data {
+            if value.to_bits() == marker.to_bits() {
+                values.push(None);
+                continue;
+            }
+        }
+        values.push(Some(value));
     }
     Ok(values)
 }

@@ -114,7 +114,7 @@ fn compress_payload(mode: CompressionMode, payload: &[u8]) -> Result<Vec<u8>> {
     match mode {
         CompressionMode::None => Ok(payload.to_vec()),
         CompressionMode::DeflateRaw => {
-            let mut encoder = DeflateEncoder::new(Vec::new(), flate2::Compression::default());
+            let mut encoder = DeflateEncoder::new(Vec::new(), flate2::Compression::best());
             encoder.write_all(payload).map_err(|err| {
                 TileError::new(
                     TileErrorCode::CompressionFailed,

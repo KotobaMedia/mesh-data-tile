@@ -73,12 +73,26 @@ fn decodes_xyz_fixtures_and_values() {
         uncompressed.header.dtype,
         uncompressed.header.endianness,
         &uncompressed.payload,
+        uncompressed.header.no_data,
     )
     .expect("decode xyz payload values");
 
     assert_eq!(
         values,
-        vec![10.0, 110.0, 210.0, 20.0, 120.0, 220.0, 30.0, 130.0, 230.0, 40.0, 140.0, 240.0,]
+        vec![
+            Some(10.0),
+            Some(110.0),
+            Some(210.0),
+            Some(20.0),
+            Some(120.0),
+            Some(220.0),
+            Some(30.0),
+            Some(130.0),
+            Some(230.0),
+            Some(40.0),
+            Some(140.0),
+            Some(240.0),
+        ]
     );
 }
 

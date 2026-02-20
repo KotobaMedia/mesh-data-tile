@@ -301,9 +301,10 @@ mod tests {
             decoded.header.dtype,
             decoded.header.endianness,
             &decoded.payload,
+            decoded.header.no_data,
         )
         .expect("decode payload values");
-        assert_eq!(values, vec![10.0, 20.0, 30.0, 40.0]);
+        assert_eq!(values, vec![Some(10.0), Some(20.0), Some(30.0), Some(40.0)]);
     }
 
     #[test]
@@ -373,5 +374,35 @@ mod tests {
         .expect_err("should reject bad xyz tile id");
 
         assert_eq!(error.code, TileErrorCode::InvalidFieldValue);
+    }
+
+    #[test]
+    fn decodes_no_data_samples_to_none() {
+        let payload =
+            encode_payload_values(DType::Uint16, Endianness::Little, &[10.0, 20.0, 30.0, 20.0])
+                .expect("encode payload values");
+
+        let encoded = encode_tile(TileEncodeInput {
+            tile_id: 2001,
+            mesh_kind: MeshKind::JisX0410,
+            dtype: DType::Uint16,
+            endianness: Endianness::Little,
+            compression: CompressionMode::None,
+            dimensions: tile_dims(),
+            no_data: Some(20.0),
+            payload: &payload,
+        })
+        .expect("encode tile");
+
+        let decoded = decode_tile_minimal(&encoded.bytes).expect("decode tile");
+        let values = decode_payload_values(
+            decoded.header.dtype,
+            decoded.header.endianness,
+            &decoded.payload,
+            decoded.header.no_data,
+        )
+        .expect("decode payload values");
+
+        assert_eq!(values, vec![Some(10.0), None, Some(30.0), None]);
     }
 }

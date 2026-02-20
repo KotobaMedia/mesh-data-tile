@@ -93,7 +93,15 @@ let encoded = encode_tile(TileEncodeInput {
 })?;
 
 let decoded = decode_tile_minimal(&encoded.bytes)?;
-let values = decode_payload_values(decoded.header.dtype, decoded.header.endianness, &decoded.payload)?;
-assert_eq!(values, vec![10.0, 20.0, 30.0, 40.0]);
+let values = decode_payload_values(
+    decoded.header.dtype,
+    decoded.header.endianness,
+    &decoded.payload,
+    decoded.header.no_data,
+)?;
+assert_eq!(
+    values,
+    vec![Some(10.0), Some(20.0), Some(30.0), Some(40.0)]
+);
 # Ok::<(), mesh_data_tile::TileError>(())
 ```

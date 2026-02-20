@@ -88,9 +88,12 @@ export type TypedArray =
   | Float32Array
   | Float64Array;
 
+export type DecodedValue = number | null;
+export type DecodedValues = ArrayLike<DecodedValue>;
+
 export interface DecodedTile {
   header: TileHeader;
-  data: TypedArray;
+  data: DecodedValues;
   payload: Uint8Array;
 }
 

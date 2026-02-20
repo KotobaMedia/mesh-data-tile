@@ -158,6 +158,25 @@ describe('mesh tile v1 conformance', () => {
     assert.deepEqual(Array.from(big.bytes.slice(26, 34)), [0, 0, 0, 0, 0, 0, 0x12, 0x34]);
   });
 
+  it('decodes samples matching no_data as null', async () => {
+    const encoded = await encodeTile({
+      ...tileTemplate(),
+      tile_id: 1012n,
+      rows: 2,
+      cols: 2,
+      bands: 1,
+      dtype: 'uint16',
+      no_data: 20,
+      data: [10, 20, 30, 20],
+    });
+
+    const decoded = await decodeTile(encoded.bytes);
+    assert.deepEqual(Array.from(decoded.data), [10, null, 30, null]);
+
+    const { csv } = await decodeTileToCsv(encoded.bytes);
+    assert.equal(csv, ['x,y,b0', '0,0,10', '1,0,', '0,1,30', '1,1,'].join('\n'));
+  });
+
   it('endianness correctness', async () => {
     const payload = [1, 258, 1024, 2048];
     const little = await encodeTile({
