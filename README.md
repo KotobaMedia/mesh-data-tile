@@ -33,6 +33,19 @@ They are designed to deliver highly efficient numerical data in tiles for map/da
 - `mesh-data-tile-cli`: CLI package.
 - `mesh-data-tile-maplibre-example`: example app package.
 
+## Rust reference implementation (minimal)
+
+A Rust reference implementation for MTI1 encode/decode (metadata + payload, no GeoJSON) is available at:
+
+- `references/rust`
+
+Run:
+
+```bash
+cd references/rust
+cargo test
+```
+
 ## Help
 
 ```bash
