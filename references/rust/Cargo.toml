@@ -1,6 +1,6 @@
 [package]
 name = "mesh-data-tile"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 description = "Rust reference implementation for Mesh Tile Format v1 (MTI1)"
 license = "MIT"
