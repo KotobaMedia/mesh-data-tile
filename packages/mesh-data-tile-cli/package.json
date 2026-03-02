@@ -4,7 +4,7 @@
   "description": "CLI for mesh-data-tile",
   "type": "module",
   "bin": {
-    "mesh-tile": "dist/cli.js"
+    "mesh-data-tile-cli": "dist/cli.js"
   },
   "publishConfig": {
     "access": "public"

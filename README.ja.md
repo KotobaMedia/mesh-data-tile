@@ -1,5 +1,9 @@
 # mesh-data-tile
 
+![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/KotobaMedia/mesh-data-tile/test.yml)
+[![NPM Version](https://img.shields.io/npm/v/mesh-data-tile)](https://www.npmjs.com/package/mesh-data-tile)
+[![Crates.io Version](https://img.shields.io/crates/v/mesh-data-tile)](https://crates.io/crates/mesh-data-tile)
+
 [English version (README.md)](README.md)
 
 Mesh Tile Format v1 (`MTI1`) のリファレンス実装です。TypeScript のライブラリパッケージと、別パッケージの CLI を含みます。

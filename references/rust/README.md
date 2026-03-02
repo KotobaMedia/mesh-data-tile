@@ -1,4 +1,4 @@
-# mesh-data-tile-rs (reference)
+# mesh-data-tile (reference)
 
 Minimal Rust reference implementation for Mesh Tile Format v1 (`MTI1`).
 
@@ -23,7 +23,7 @@ JIS root-tile recommendation:
 From repository root:
 
 ```bash
-cargo test -p mesh-data-tile-rs
+cargo test -p mesh-data-tile
 ```
 
 From `references/rust`:
@@ -47,8 +47,8 @@ cargo login <CRATES_IO_TOKEN>
 Preflight checks (from repository root):
 
 ```bash
-cargo test -p mesh-data-tile-rs
-cargo package -p mesh-data-tile-rs
+cargo test -p mesh-data-tile
+cargo package -p mesh-data-tile
 ```
 
 Dry-run a release (from `references/rust`):
@@ -72,8 +72,8 @@ cargo release major --dry-run
 
 Current release config in `Cargo.toml`:
 - Releases are allowed only from `main`.
-- Tag format is `mesh-data-tile-rs-v<version>`.
-- Release commit message format is `chore(release): mesh-data-tile-rs v<version>`.
+- Tag format is `mesh-data-tile-v<version>`.
+- Release commit message format is `chore(release): mesh-data-tile v<version>`.
 
 ## Example
 

@@ -117,7 +117,7 @@ async function main(): Promise<void> {
       closeOnClick: false,
     });
 
-    map.on('mousemove', 'jismesh-fill', (event) => {
+    map.on('mousemove', 'jismesh-fill', (event: any) => {
       const feature = event.features?.[0];
       if (!feature) {
         return;
