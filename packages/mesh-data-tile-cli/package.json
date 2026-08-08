@@ -37,13 +37,13 @@
     "node": ">=20"
   },
   "dependencies": {
-    "commander": "^14.0.3",
+    "commander": "^15.0.0",
     "mesh-data-tile": "workspace:*"
   },
   "devDependencies": {
     "@tsconfig/node24": "^24.0.4",
-    "@types/node": "^24.0.0",
-    "tsx": "^4.21.0",
-    "typescript": "^5.9.2"
+    "@types/node": "^26.1.2",
+    "tsx": "^4.23.10",
+    "typescript": "^7.0.2"
   }
 }

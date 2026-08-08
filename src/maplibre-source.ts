@@ -1,7 +1,7 @@
 import { createError } from './errors.js';
 import { decodeXyzTileId } from './tile-id.js';
 import { decodeTile } from './tile-format.js';
-import geojsonvt from '@maplibre/geojson-vt';
+import { GeoJSONVT } from '@maplibre/geojson-vt';
 import { fromGeojsonVt } from '@maplibre/vt-pbf';
 import {
   getJisMeshCodesWithinBounds,
@@ -890,7 +890,7 @@ export function createMapLibreMeshTileProtocol(options: MeshTileProtocolOptions 
 
       const vectorMaxZoom = clampGeoJsonVtMaxZoom(configuredVectorMaxZoom ?? tile.z);
       const vectorIndexMaxZoom = Math.min(configuredVectorIndexMaxZoom, vectorMaxZoom);
-      const index = geojsonvt(
+      const index = new GeoJSONVT(
         {
           type: 'FeatureCollection',
           features,

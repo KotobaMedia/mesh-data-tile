@@ -2,6 +2,8 @@
   "extends": "@tsconfig/node24/tsconfig.json",
   "compilerOptions": {
     "lib": ["ES2022"],
+    "types": ["node"],
+    "rootDir": "src",
     "outDir": "dist",
     "declaration": true
   },

@@ -19,5 +19,5 @@ tag-name = "{{crate_name}}-v{{version}}"
 tag-message = "Release {{crate_name}} v{{version}}"
 
 [dependencies]
-crc32fast = "1.4"
-flate2 = { version = "1.0", default-features = false, features = ["rust_backend"] }
+crc32fast = "1.5"
+flate2 = { version = "1.1", default-features = false, features = ["rust_backend"] }
